@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Protocol Drill — Paramedic III Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     TOKEN SYSTEM — "Field Card"
+     Grounded in the physical artifact this replaces: a tabbed
+     EMS protocol binder / laminated drug-dose card. Paper-white
+     base for legibility, ink-black text, a clinical red for
+     action items, deep teal for wayfinding/category tabs.
+  ============================================================ */
+  :root{
+    --paper: #f8f5ef;
+    --paper-raised: #ffffff;
+    --card-line: #ded6c4;
+    --card-line-soft: #ebe5d6;
+    --ink: #211f1c;
+    --ink-soft: #5c5650;
+    --ink-faint: #766d61;
+
+    --red: #9a1f1f;
+    --red-deep: #7a1717;
+    --red-tint: #f6e4e1;
+    --red-tint-line: #e8c3bd;
+
+    --teal: #1d4d4f;
+    --teal-deep: #143839;
+    --teal-tint: #e2eeed;
+    --teal-tint-line: #b9d4d2;
+
+    --green: #2d6a4f;
+    --green-tint: #e1efe7;
+    --green-tint-line: #aed3c0;
+
+    --amber: #7d530b;
+    --amber-tint: #f6ecd9;
+    --amber-tint-line: #e3c894;
+
+    --display: 'Helvetica Neue', Arial, -apple-system, BlinkMacSystemFont, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+    --radius-card: 10px;
+    --radius-pill: 100px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --shadow-card: 0 1px 2px rgba(33,31,28,0.04), 0 1px 1px rgba(33,31,28,0.03);
+    --shadow-raised: 0 4px 14px rgba(33,31,28,0.10), 0 1px 3px rgba(33,31,28,0.06);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* faint paper-grain texture */
+  body::before{
+    content:"";
+    position: fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(33,31,28,0.025), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(33,31,28,0.02), transparent 50%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  #app{ position:relative; z-index:1; max-width: 600px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+  a{ color: inherit; }
+  ::selection{ background: var(--red-tint-line); }
+
+  h1,h2,h3{ font-family: var(--display); font-weight:800; margin:0; letter-spacing: -0.01em; font-stretch: condensed; }
+
+  /* ============ TOP BAR ============ */
+  .topbar{
+    position: sticky; top:0; z-index:30;
+    padding: calc(12px + var(--safe-top)) 18px 0 18px;
+    background: var(--paper);
+    border-bottom: 1px solid transparent;
+  }
+  .topbar-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding-bottom: 12px;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand .brand-mark{
+    width:9px; height:9px; border-radius:2px; background: var(--red);
+    transform: rotate(45deg); flex-shrink:0; margin-bottom:2px;
+  }
+  .brand-text{
+    font-family: var(--display); font-weight:700; font-size:17px; letter-spacing:0.01em; color: var(--ink);
+  }
+  .brand-text .sub{ font-weight:500; color: var(--ink-faint); font-size:13px; margin-left:4px; }
+
+  .icon-btn{
+    background: var(--paper-raised); border: 1.5px solid var(--card-line);
+    color: var(--ink-soft); border-radius: 8px;
+    width: 36px; height: 36px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size: 16px;
+    transition: border-color .15s, color .15s;
+  }
+  .icon-btn:hover{ border-color: var(--ink-faint); color: var(--ink); }
+  .icon-btn:active{ transform: scale(0.94); }
+
+  main{ flex:1; padding: 0 18px calc(28px + var(--safe-bottom)) 18px; }
+
+  /* ============ HOME VIEW ============ */
+  .hero{ padding: 16px 0 18px 0; border-bottom: 1px solid var(--card-line); margin-bottom: 18px; }
+  .hero h1{ font-size: 26px; line-height:1.15; color: var(--ink); }
+  .hero p{ margin: 6px 0 0 0; color: var(--ink-soft); font-size: 14.5px; line-height:1.5; max-width: 30em; }
+
+  .stats-row{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-bottom: 18px; }
+  .stat-box{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius: var(--radius-card);
+    padding: 12px 10px; text-align:center; box-shadow: var(--shadow-card);
+  }
+  .stat-box .num{ font-family: var(--display); font-size:24px; font-weight:700; color: var(--ink); line-height:1; }
+  .stat-box .lbl{ font-size:10.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; font-weight:600; }
+  .stat-box.accent .num{ color: var(--red); }
+
+  .blind-cta{
+    display:flex; align-items:center; gap:12px;
+    width:100%; text-align:left; cursor:pointer;
+    background: var(--teal); color:#fff; border:none; border-radius: var(--radius-card);
+    padding: 14px 16px; margin-bottom: 20px;
+    box-shadow: var(--shadow-card);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .blind-cta:active{ transform: scale(0.985); }
+  .blind-cta .bc-icon{
+    width:38px; height:38px; border-radius:8px; background: rgba(255,255,255,0.14);
+    display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+  }
+  .blind-cta .bc-text{ display:flex; flex-direction:column; gap:1px; }
+  .blind-cta .bc-title{ font-family: var(--display); font-weight:700; font-size:15.5px; }
+  .blind-cta .bc-sub{ font-size:12.5px; color: rgba(255,255,255,0.78); }
+  .blind-cta .bc-arrow{ margin-left:auto; font-size:18px; opacity:0.7; }
+
+  .search-row{ position:relative; margin-bottom: 22px; }
+  .search-row input{
+    width:100%; padding: 12px 14px 12px 38px; border-radius: 9px;
+    border: 1.5px solid var(--card-line); background: var(--paper-raised); color: var(--ink);
+    font-size: 15px; font-family: var(--body);
+  }
+  .search-row input::placeholder{ color: var(--ink-faint); }
+  .search-row input:focus{ outline:none; border-color: var(--ink-soft); }
+  .search-row .search-icon{
+    position:absolute; left:13px; top:50%; transform:translateY(-50%);
+    color: var(--ink-faint); font-size:14px; pointer-events:none;
+  }
+
+  /* Category tabs — literal index-tab metaphor */
+  .cat-block{ margin-bottom: 26px; }
+  .cat-tab{
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 5px 12px 5px 10px; border-radius: 6px 6px 0 0;
+    margin: 0 0 -1px 0;
+    font-family: var(--display); font-size: 12.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+  }
+  .cat-tab .tab-count{
+    font-family: var(--mono); font-weight:500; font-size:10.5px; opacity:0.75;
+  }
+  .cat-block-inner{
+    border: 1px solid var(--card-line); border-radius: 0 8px 8px 8px;
+    background: var(--paper-raised); box-shadow: var(--shadow-card);
+    overflow:hidden;
+  }
+  .protocol-row{
+    display:flex; align-items:center; gap:12px;
+    padding: 13px 14px; cursor:pointer;
+    border-bottom: 1px solid var(--card-line-soft);
+    transition: background .12s;
+  }
+  .protocol-row:last-child{ border-bottom:none; }
+  .protocol-row:active{ background: var(--card-line-soft); }
+  .protocol-row .pr-num{
+    font-family: var(--mono); font-size:11.5px; color: var(--ink-faint); width:22px; flex-shrink:0; text-align:right;
+  }
+  .pr-main{ flex:1; min-width:0; }
+  .pr-title{ font-size:15px; font-weight:600; color: var(--ink); line-height:1.3; }
+  .pr-meta{ font-size:11.5px; color: var(--ink-faint); margin-top:2px; font-family: var(--mono); }
+  .pr-status{ flex-shrink:0; }
+  .pr-arrow{ color: var(--ink-faint); font-size:17px; flex-shrink:0; }
+
+  .status-chip{
+    display:inline-flex; align-items:center; gap:4px;
+    padding: 3px 8px; border-radius: var(--radius-pill);
+    font-size: 10px; font-weight:700; font-family: var(--mono); text-transform:uppercase; letter-spacing:0.02em;
+    white-space:nowrap;
+  }
+  .status-chip.mastered{ background: var(--green-tint); color: var(--green); border:1px solid var(--green-tint-line); }
+  .status-chip.attempted{ background: var(--amber-tint); color: var(--amber); border:1px solid var(--amber-tint-line); }
+  .status-chip.new{ background: var(--card-line-soft); color: var(--ink-faint); border:1px solid var(--card-line); }
+
+  .empty-state{ text-align:center; color: var(--ink-soft); padding: 50px 20px; font-size:14.5px; line-height:1.6; }
+
+  /* ============ PROTOCOL MENU VIEW ============ */
+  .back-row{ display:flex; align-items:center; gap:10px; padding-bottom:12px; }
+  .back-btn{
+    display:flex; align-items:center; gap:5px; color: var(--ink-soft);
+    font-size: 14px; font-weight:600; cursor:pointer; background:none; border:none; font-family: var(--body);
+    padding: 6px 2px;
+  }
+  .back-btn:active{ opacity:0.6; }
+
+  .menu-hero{ padding: 6px 0 18px 0; }
+  .menu-hero .menu-cat-label{
+    font-family: var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color: var(--teal); font-weight:700; margin-bottom:6px;
+  }
+  .menu-hero h1{ font-size:23px; color: var(--ink); }
+  .menu-hero .menu-meta{ color: var(--ink-faint); font-size:13px; margin-top:5px; font-family: var(--mono); }
+
+  .progress-card{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius: var(--radius-card);
+    padding: 14px 16px; margin-bottom:16px; box-shadow: var(--shadow-card);
+  }
+  .progress-card .pc-label{
+    font-family: var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em;
+    color: var(--ink-faint); margin-bottom:10px; font-weight:600;
+  }
+  .progress-stats{ display:flex; gap:20px; }
+  .progress-stats .pstat{ display:flex; flex-direction:column; gap:2px; }
+  .progress-stats .pstat .v{ font-family: var(--display); font-size:19px; font-weight:700; color: var(--ink); }
+  .progress-stats .pstat .v.best{ color: var(--green); }
+  .progress-stats .pstat .k{ font-size:10.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    width:100%; padding: 14px 18px; border-radius: 10px; border: none;
+    font-size: 15.5px; font-weight:700; font-family: var(--body); cursor:pointer;
+    transition: transform .08s, opacity .15s, box-shadow .15s;
+    margin-bottom: 11px;
+  }
+  .btn:active{ transform: scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-primary{ background: var(--red); color:#fff; box-shadow: 0 2px 8px rgba(154,31,31,0.25); }
+  .btn-primary:active{ background: var(--red-deep); }
+  .btn-secondary{ background: var(--teal-tint); color: var(--teal-deep); border: 1.5px solid var(--teal-tint-line); }
+  .btn-ghost{ background: transparent; color: var(--ink-soft); border: 1.5px solid var(--card-line); }
+  .btn-text{ background:none; border:none; color: var(--ink-soft); font-weight:600; font-size:14px; padding:8px; }
+  .btn-row{ display:flex; gap:10px; }
+  .btn-row .btn{ margin-bottom:0; }
+
+  .preview-list{ display:flex; flex-direction:column; gap:8px; }
+  .preview-item{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius:9px;
+    padding: 12px 14px; display:flex; gap:11px; box-shadow: var(--shadow-card);
+  }
+  .preview-item .pi-num{
+    font-family: var(--mono); font-size:11.5px; color: var(--ink-faint); flex-shrink:0; padding-top:1px;
+  }
+  .preview-item .pi-text{ font-size:14px; line-height:1.5; color: var(--ink); }
+
+  /* ============ DRILL VIEW ============ */
+  .tab-track{
+    display:flex; gap:3px; margin-bottom:16px;
+  }
+  .tab-track .tick{
+    flex:1; height:5px; border-radius:3px; background: var(--card-line);
+    transition: background .25s;
+  }
+  .tab-track .tick.done{ background: var(--green); }
+  .tab-track .tick.current{ background: var(--red); }
+
+  .drill-header{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .drill-title{ font-size:19px; color: var(--ink); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .drill-tag{
+    font-family: var(--mono); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
+    background: var(--amber-tint); color: var(--amber); border:1px solid var(--amber-tint-line);
+    padding: 2px 7px; border-radius: var(--radius-pill);
+  }
+  .step-counter{ font-family: var(--mono); font-size:13px; color: var(--ink-faint); font-weight:600; white-space:nowrap; }
+
+  .card{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius: var(--radius-card);
+    padding: 18px 18px 17px 18px; margin-bottom: 14px; box-shadow: var(--shadow-card);
+  }
+
+  .prompt-label{
+    font-family: var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    color: var(--ink-faint); margin-bottom: 11px; font-weight:700; display:flex; align-items:center; gap:6px;
+  }
+  .prompt-label::before{ content:'?'; display:inline-flex; align-items:center; justify-content:center;
+    width:15px; height:15px; border-radius:50%; background: var(--ink-faint); color:#fff; font-size:10px; font-weight:700; }
+
+  .walk-card{ padding: 26px 20px 24px; }
+  .walk-step-text{ font-size:19px; line-height:1.5; color: var(--ink); font-weight:500; }
+  .walk-hidden{ font-size:15px; line-height:1.5; color: var(--ink-faint); font-style:italic; padding: 6px 0 2px; }
+  .walk-actions{ display:flex; gap:10px; margin-top:6px; }
+  .walk-actions .btn{ margin-bottom:0; }
+  .walk-actions .btn-primary{ flex:1; }
+  .walk-actions .btn-ghost{ flex: 0 0 auto; padding-left:18px; padding-right:18px; }
+
+  .answer-box{
+    width:100%; min-height: 84px; resize:vertical;
+    background: var(--paper); border: 1.5px solid var(--card-line); border-radius: 9px;
+    color: var(--ink); font-size: 16px; font-family: var(--body);
+    padding: 13px 14px; line-height:1.5;
+  }
+  .answer-box:focus{ outline:none; border-color: var(--ink-soft); background: var(--paper-raised); }
+  .answer-box::placeholder{ color: var(--ink-faint); }
+  .answer-box:disabled{ opacity:0.75; background: var(--card-line-soft); }
+
+  .answer-actions{ display:flex; gap:10px; margin-top:13px; }
+  .answer-actions .btn{ margin-bottom:0; }
+  .answer-actions .btn-skip{ flex: 0 0 auto; padding-left:18px; padding-right:18px; }
+  .answer-actions .btn-submit{ flex:1; }
+
+  /* Feedback panel */
+  .feedback{
+    border-radius: var(--radius-card); padding: 16px 18px; margin-bottom:14px;
+    border: 1.5px solid var(--card-line); animation: cardIn .22s ease;
+  }
+  @keyframes cardIn{ from{ opacity:0; transform: translateY(5px);} to{opacity:1; transform:none;} }
+  .feedback.correct{ background: var(--green-tint); border-color: var(--green-tint-line); }
+  .feedback.partial{ background: var(--amber-tint); border-color: var(--amber-tint-line); }
+  .feedback.incorrect{ background: var(--red-tint); border-color: var(--red-tint-line); }
+
+  .feedback-verdict{
+    display:flex; align-items:center; gap:9px; font-family: var(--display); font-weight:700; font-size:16px; margin-bottom:9px;
+  }
+  .verdict-mark{
+    width:22px; height:22px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff;
+  }
+  .feedback.correct .verdict-mark{ background: var(--green); }
+  .feedback.correct .feedback-verdict{ color: var(--green); }
+  .feedback.partial .verdict-mark{ background: var(--amber); }
+  .feedback.partial .feedback-verdict{ color: var(--amber); }
+  .feedback.incorrect .verdict-mark{ background: var(--red); }
+  .feedback.incorrect .feedback-verdict{ color: var(--red); }
+
+  .feedback-why{ font-size: 14px; color: var(--ink); line-height:1.55; margin-bottom: 12px; }
+  .feedback-correct-step{
+    background: var(--paper-raised); border: 1px solid rgba(33,31,28,0.08); border-radius: 8px; padding: 12px 14px;
+    font-size: 14.5px; line-height:1.55; color: var(--ink);
+  }
+  .feedback-correct-step .fc-label{
+    font-family: var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
+    color: var(--ink-faint); display:block; margin-bottom:5px; font-weight:700;
+  }
+  .btn-override{
+    margin: 12px 0 0 0; width:100%; font-size:13px; padding:10px 14px;
+    background: var(--paper-raised); border:1.5px dashed var(--ink-faint); color: var(--ink-soft);
+  }
+  .btn-override:active{ background: var(--card-line-soft); }
+
+  /* ============ SUMMARY VIEW ============ */
+  .summary-hero{ text-align:center; padding: 14px 10px 6px 10px; }
+  .summary-hero .sh-label{ font-family: var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:0.07em; color: var(--ink-faint); font-weight:700; }
+  .summary-hero h1{ font-size:20px; margin-top:4px; color: var(--ink); }
+
+  .ring-wrap{ display:flex; justify-content:center; margin: 18px 0 4px 0; }
+  .ring-wrap svg{ width:128px; height:128px; }
+  .ring-bg{ fill:none; stroke: var(--card-line); stroke-width:9; }
+  .ring-fg{ fill:none; stroke-width:9; stroke-linecap:round; transform-origin:center; transform: rotate(-90deg); transition: stroke-dashoffset .7s ease; }
+  .ring-text{ font-family: var(--display); font-weight:700; }
+
+  .summary-breakdown{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin: 18px 0 22px 0; }
+  .sb-item{ text-align:center; padding: 11px 6px; border-radius: 9px; background: var(--paper-raised); border:1px solid var(--card-line); }
+  .sb-item .v{ font-family: var(--display); font-size:21px; font-weight:700; }
+  .sb-item .k{ font-size:10.5px; color: var(--ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin-top:3px; font-weight:600; }
+  .sb-item.ok .v{ color: var(--green); }
+  .sb-item.partial .v{ color: var(--amber); }
+  .sb-item.miss .v{ color: var(--red); }
+
+  .section-divider{
+    display:flex; align-items:center; gap:10px; margin: 24px 0 12px 0;
+  }
+  .section-divider .sd-label{
+    font-family: var(--mono); font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    color: var(--ink-faint); font-weight:700; white-space:nowrap;
+  }
+  .section-divider .sd-line{ flex:1; height:1px; background: var(--card-line); }
+
+  .review-list{ display:flex; flex-direction:column; gap:9px; }
+  .review-item{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius:9px; padding:13px 15px;
+    border-left: 3px solid var(--card-line);
+  }
+  .review-item.partial{ border-left-color: var(--amber); }
+  .review-item.miss{ border-left-color: var(--red); }
+  .review-item .ri-head{
+    display:flex; align-items:center; gap:7px; margin-bottom:7px; font-size:12px; font-weight:700;
+    font-family: var(--mono); text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .review-item.partial .ri-head{ color: var(--amber); }
+  .review-item.miss .ri-head{ color: var(--red); }
+  .review-item .ri-step{ font-size: 14px; color: var(--ink); line-height:1.5; }
+  .review-item .ri-step + .ri-step{ margin-top:7px; padding-top:7px; border-top:1px dashed var(--card-line); color: var(--ink-soft); }
+  .review-item .ri-step strong{ font-weight:700; color: var(--ink-faint); font-size:11px; text-transform:uppercase; letter-spacing:0.03em; display:block; margin-bottom:3px; font-family: var(--mono); }
+
+  /* ============ BLIND MODE ============ */
+  .clue-list{ display:flex; flex-direction:column; gap:9px; margin-bottom: 16px; }
+  .clue-item{
+    background: var(--paper-raised); border:1px solid var(--card-line); border-radius:9px;
+    padding: 13px 15px; font-size: 14.5px; line-height:1.5; color: var(--ink);
+    display:flex; gap:11px; align-items:flex-start;
+    animation: cardIn .25s ease; box-shadow: var(--shadow-card);
+  }
+  .clue-item .clue-num{
+    font-family: var(--mono); color:#fff; background: var(--teal); border-radius:50%;
+    width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; flex-shrink:0; margin-top:1px;
+  }
+
+  .scenario-card{ background: var(--teal-tint); border: 1.5px solid var(--teal-tint-line); }
+  .scenario-label{
+    font-family: var(--mono); font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+    color: var(--teal-deep); margin-bottom:8px; font-weight:700;
+  }
+  .scenario-text{ font-size: 14.5px; line-height: 1.6; color: var(--ink); }
+
+  /* Toast */
+  .toast{
+    position: fixed; bottom: calc(22px + var(--safe-bottom)); left:50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--paper);
+    padding: 12px 20px; border-radius: var(--radius-pill); font-size: 13.5px; font-weight:600; z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    animation: toastIn .25s ease, toastOut .25s ease 1.8s forwards;
+  }
+  @keyframes toastIn{ from{ opacity:0; transform: translateX(-50%) translateY(8px);} to{opacity:1; transform:translateX(-50%);} }
+  @keyframes toastOut{ to{ opacity:0; } }
+
+  .hidden{ display:none !important; }
+
+  /* focus visibility for accessibility */
+  button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--teal); outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  @media (max-width: 380px){
+    .hero h1{ font-size:23px; }
+    .stat-box .num{ font-size:20px; }
+  }
+
+  /* ===== PHARM DRILL (scoped) ===== */
+  .pharm-view { 
+    --pharm-bg:       #f5f4f0;
+    --pharm-surface:  #ffffff;
+    --pharm-surface2: #f0efe9;
+    --pharm-border:   #e4e2da;
+    --pharm-text:     #1a1917;
+    --pharm-muted:    #8a8880;
+    --pharm-faint:    #c8c6be;
+
+    --pharm-adult:    #2d6a4f;
+    --pharm-adult-bg: #edf7f2;
+    --pharm-peds:     #7b4f12;
+    --pharm-peds-bg:  #fdf3e7;
+    --pharm-both:     #2c4a7c;
+    --pharm-both-bg:  #edf2fc;
+
+    --pharm-ok:       #2d6a4f;
+    --pharm-ok-bg:    #edf7f2;
+    --pharm-err:      #9b2335;
+    --pharm-err-bg:   #fceef0;
+
+    --pharm-radius:   12px;
+    --pharm-radius-sm: 8px;
+    --pharm-shadow:   0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --pharm-shadow-lg:0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+
+    --pharm-serif: 'DM Serif Display', serif;
+    --pharm-sans:  'DM Sans', sans-serif;
+   }
+.pharm-view *, .pharm-view *::before, .pharm-view *::after { box-sizing: border-box; margin: 0; padding: 0; }.pharm-view.pharm-root {
+    background: transparent;
+    color: var(--pharm-text);
+    font-family: var(--pharm-sans);
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 4px 0;
+  }
+  .pharm-view .logo{ font-size:1.4rem; }
+  .pharm-view header{ margin-bottom:18px; }
+  .pharm-view .card{ padding: 28px 24px 22px; }
+  /* ── Header ── */
+  .pharm-view header {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }.pharm-view .logo {
+    font-family: var(--pharm-serif);
+    font-size: 1.7rem;
+    color: var(--pharm-text);
+    letter-spacing: -0.01em;
+  }.pharm-view .logo span {
+    font-family: var(--pharm-sans);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pharm-muted);
+    display: block;
+    margin-top: 1px;
+  }.pharm-view .score-pill {
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--pharm-muted);
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .score-pill strong { color: var(--pharm-text); font-weight: 600; }
+  /* ── Mode tabs ── */
+  .pharm-view .tabs {
+    width: 100%;
+    max-width: 640px;
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: var(--pharm-radius);
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .tab {
+    flex: 1;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    border-radius: calc(var(--pharm-radius) - 2px);
+    font-family: var(--pharm-sans);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--pharm-muted);
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    letter-spacing: 0.01em;
+  }.pharm-view .tab:hover { background: var(--pharm-surface2); color: var(--pharm-text); }.pharm-view .tab.active[data-mode="adult"] { background: var(--pharm-adult-bg); color: var(--pharm-adult); }.pharm-view .tab.active[data-mode="peds"] { background: var(--pharm-peds-bg);  color: var(--pharm-peds); }.pharm-view .tab.active[data-mode="both"] { background: var(--pharm-both-bg);  color: var(--pharm-both); }
+  /* ── Progress ── */
+  .pharm-view .progress-track {
+    width: 100%;
+    max-width: 640px;
+    height: 3px;
+    background: var(--pharm-border);
+    border-radius: 999px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }.pharm-view .progress-fill {
+    height: 100%;
+    background: var(--pharm-faint);
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }.pharm-view .progress-fill.adult { background: var(--pharm-adult); }.pharm-view .progress-fill.peds { background: var(--pharm-peds); }.pharm-view .progress-fill.both { background: var(--pharm-both); }
+  /* ── Stats row ── */
+  .pharm-view .stats {
+    width: 100%;
+    max-width: 640px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }.pharm-view .stat {
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: var(--pharm-radius-sm);
+    padding: 12px 16px;
+    text-align: center;
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .stat .val {
+    font-family: var(--pharm-serif);
+    font-size: 1.6rem;
+    color: var(--pharm-text);
+    line-height: 1;
+    display: block;
+    margin-bottom: 3px;
+  }.pharm-view .stat .lbl {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pharm-muted);
+  }
+  /* ── Main card ── */
+  .pharm-view .card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: var(--pharm-radius);
+    padding: 36px 36px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--pharm-shadow-lg);
+    transition: box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }.pharm-view .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: var(--pharm-radius) var(--pharm-radius) 0 0;
+    background: var(--pharm-faint);
+    transition: background 0.3s;
+  }.pharm-view .card.adult-mode::after { background: var(--pharm-adult); }.pharm-view .card.peds-mode::after { background: var(--pharm-peds); }.pharm-view .card.both-mode::after { background: var(--pharm-both); }.pharm-view .dose-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+  }.pharm-view .dose-label.adult { background: var(--pharm-adult-bg); color: var(--pharm-adult); border-color: rgba(45,106,79,0.2); }.pharm-view .dose-label.peds { background: var(--pharm-peds-bg);  color: var(--pharm-peds);  border-color: rgba(123,79,18,0.2); }.pharm-view .dose-label.both { background: var(--pharm-both-bg);  color: var(--pharm-both);  border-color: rgba(44,74,124,0.2); }.pharm-view .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }.pharm-view .adult .dot { background: var(--pharm-adult); }.pharm-view .peds  .dot { background: var(--pharm-peds); }.pharm-view .both  .dot { background: var(--pharm-both); }.pharm-view .drug-name {
+    font-family: var(--pharm-serif);
+    font-size: clamp(2rem, 5.5vw, 2.8rem);
+    color: var(--pharm-text);
+    line-height: 1.05;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }.pharm-view .drug-pkg {
+    font-size: 0.8rem;
+    color: var(--pharm-muted);
+    font-weight: 400;
+    margin-bottom: 20px;
+  }.pharm-view .question {
+    font-size: 0.85rem;
+    color: var(--pharm-muted);
+    font-weight: 400;
+    border-top: 1px solid var(--pharm-border);
+    padding-top: 16px;
+  }
+  /* ── Answer row ── */
+  .pharm-view .answer-row {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }.pharm-view .ans-input {
+    flex: 1;
+    background: var(--pharm-surface);
+    border: 1.5px solid var(--pharm-border);
+    border-radius: var(--pharm-radius-sm);
+    color: var(--pharm-text);
+    font-family: var(--pharm-sans);
+    font-size: 0.95rem;
+    font-weight: 400;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .ans-input::placeholder { color: var(--pharm-faint); }.pharm-view .ans-input:focus { border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.15); }.pharm-view .ans-input.ok { border-color: var(--pharm-ok);  box-shadow: 0 0 0 3px rgba(45,106,79,0.1); }.pharm-view .ans-input.err { border-color: var(--pharm-err); box-shadow: 0 0 0 3px rgba(155,35,53,0.1); }.pharm-view .check-btn {
+    background: var(--pharm-text);
+    color: #fff;
+    border: none;
+    border-radius: var(--pharm-radius-sm);
+    font-family: var(--pharm-sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 13px 22px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }.pharm-view .check-btn:hover { opacity: 0.85; }.pharm-view .check-btn:active { transform: scale(0.97); }
+  /* ── Feedback ── */
+  .pharm-view .feedback {
+    width: 100%;
+    max-width: 640px;
+    border-radius: var(--pharm-radius-sm);
+    padding: 13px 16px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--pharm-border);
+    background: var(--pharm-surface2);
+    color: var(--pharm-muted);
+    min-height: 48px;
+    transition: all 0.2s;
+  }.pharm-view .feedback.ok { background: var(--pharm-ok-bg);  border-color: rgba(45,106,79,0.25);  color: var(--pharm-ok); }.pharm-view .feedback.err { background: var(--pharm-err-bg); border-color: rgba(155,35,53,0.25); color: var(--pharm-err); }.pharm-view .feedback .ans-text { color: var(--pharm-text); font-weight: 500; }.pharm-view .fb-icon { font-size: 1rem; flex-shrink: 0; }
+  /* ── Controls ── */
+  .pharm-view .controls {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }.pharm-view .ctrl {
+    flex: 1;
+    padding: 10px;
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: var(--pharm-radius-sm);
+    font-family: var(--pharm-sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--pharm-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .ctrl:hover { border-color: #b0aca2; color: var(--pharm-text); }.pharm-view .ctrl.next {
+    background: var(--pharm-text);
+    border-color: var(--pharm-text);
+    color: #fff;
+  }.pharm-view .ctrl.next:hover { opacity: 0.85; }.pharm-view .ctrl.next:disabled { opacity: 0.35; cursor: default; }
+  /* ── Reference table ── */
+  .pharm-view .ref-section {
+    width: 100%;
+    max-width: 640px;
+  }.pharm-view .ref-toggle-btn {
+    background: none;
+    border: none;
+    font-family: var(--pharm-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--pharm-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    margin-bottom: 10px;
+    transition: color 0.15s;
+  }.pharm-view .ref-toggle-btn:hover { color: var(--pharm-text); }.pharm-view .chevron {
+    display: inline-block;
+    transition: transform 0.2s;
+    font-style: normal;
+  }.pharm-view .chevron.open { transform: rotate(90deg); }.pharm-view .ref-wrap {
+    display: none;
+    background: var(--pharm-surface);
+    border: 1px solid var(--pharm-border);
+    border-radius: var(--pharm-radius);
+    overflow: hidden;
+    box-shadow: var(--pharm-shadow);
+  }.pharm-view .ref-wrap.open { display: block; }.pharm-view table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }.pharm-view thead th {
+    background: var(--pharm-surface2);
+    color: var(--pharm-muted);
+    font-weight: 600;
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--pharm-border);
+  }.pharm-view tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--pharm-border);
+    color: var(--pharm-text);
+    vertical-align: top;
+    line-height: 1.5;
+  }.pharm-view tbody tr:last-child td { border-bottom: none; }.pharm-view tbody tr:hover td { background: var(--pharm-surface2); }.pharm-view tbody td:first-child { font-weight: 500; }
+
+  @keyframes pharmFadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }.pharm-view .card { animation: pharmFadeUp 0.25s cubic-bezier(.4,0,.2,1); }
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+
+// Broward College Paramedic III Protocol Data — TREATMENT STEPS ONLY
+const PROTOCOL_DATA = {
+  categories: [
+    {
+      name: "Medical Emergencies",
+      protocols: [
+        {
+          id: "allergic-reaction",
+          title: "Allergic Reaction",
+          scenario: "34-year-old with hives, throat tightness, and wheezing after eating shellfish. On arrival patient also has facial swelling.",
+          steps: [
+            "If airway is compromised, refer to Advanced Airway or Surgical Airway protocol",
+            "Administer EPINEPHRINE 1:1,000 (1mg/mL) 0.3mg (0.3mL) IM — may repeat 2x PRN in 5 minute intervals",
+            "Administer BENADRYL 50mg IV/IO/IM slow IVP (dilute with 9mL Normal Saline for IV/IO)",
+            "Administer ALBUTEROL 2.5mg + ATROVENT 0.5mg via nebulizer — may repeat PRN (max 3 Atrovent doses)",
+            "Administer SOLUMEDROL 125mg slow IV push",
+            "If reaction is severe (loss of radial pulse or SBP < 90): prepare Push-Pressor Epinephrine 1:100,000 by discarding 9mL of Epi 1:10,000 and adding 9mL Normal Saline",
+            "Administer Push-Pressor Epinephrine 1:100,000 at 1mL/minute IV/IO, titrate to age-appropriate systolic BP — may repeat PRN, max 30mL"
+          ]
+        },
+        {
+          id: "diabetic-hypoglycemia",
+          title: "Diabetic Emergencies — Hypoglycemia",
+          scenario: "A known diabetic is confused, diaphoretic, and unable to follow commands. BGL reads 42 mg/dL.",
+          steps: [
+            "If conscious and able to swallow safely: administer ORAL GLUCOSE 15g buccally — may repeat 1x PRN",
+            "If unable to swallow safely: administer DEXTROSE 50% (D50) 50mL slow IV push",
+            "If no IV access: administer GLUCAGON 1mg IM"
+          ]
+        },
+        {
+          id: "diabetic-hyperglycemia",
+          title: "Diabetic Emergencies — Hyperglycemia (DKA)",
+          scenario: "A type 1 diabetic with BGL of 420 mg/dL, Kussmaul respirations, abdominal pain, and a fruity odor on breath.",
+          steps: [
+            "Administer NORMAL SALINE 20mL/kg IV/IO drip, assessing lung sounds and BP every 500mL — may repeat 1x PRN, max 2L",
+            "Use caution in patients with significant coronary heart disease, CHF, or renal failure"
+          ]
+        },
+        {
+          id: "respiratory-emergencies",
+          title: "Respiratory Emergencies",
+          scenario: "A 58-year-old with known COPD in severe respiratory distress with audible wheezing and accessory muscle use. SpO2 is 84%.",
+          steps: [
+            "Apply CPAP: 10 cm H2O for CHF/PE; 2.5–5 cm H2O for Asthma/Pneumonia/COPD (contraindicated if SBP < 90, no spontaneous respirations, decreased LOC, or < 30kg)",
+            "Administer ALBUTEROL 2.5mg + ATROVENT 0.5mg via nebulizer (may run simultaneously with CPAP) — may repeat PRN, max 3 Atrovent doses",
+            "For severe/worsening asthma not responding: administer EPINEPHRINE 1:1,000 0.3mg (0.3mL) IM — may repeat 2x PRN in 5 minute intervals",
+            "Administer MAGNESIUM SULFATE: dilute 2g in D5W bag, infuse over 5–10 minutes IV/IO with a 10gtt set, monitoring BP",
+            "Administer SOLUMEDROL 125mg slow IV push",
+            "For Croup/Epiglottitis: do NOT stress the patient, do NOT attempt intubation/OPA/NPA placement; ventilate via BVM as needed and expedite transport",
+            "For Croup/Epiglottitis: administer EPINEPHRINE 1:1,000 3mg (3mL) via nebulizer undiluted"
+          ]
+        },
+        {
+          id: "seizure",
+          title: "Seizure",
+          scenario: "A 28-year-old with no prior seizure history has been actively convulsing for 4 minutes. He is unresponsive to voice.",
+          steps: [
+            "Monitor ETCO2; provide gentle head support to avoid trauma; remove dangerous objects from around patient",
+            "Administer VERSED 5mg IV/IO/IM — may repeat 1x PRN in 5 minutes if seizure does not subside, max dose 10mg",
+            "For pediatric febrile seizure: remove clothing for passive cooling — do NOT cover with wet towel, do NOT apply ice or cold packs",
+            "For pediatric active (non-febrile) seizure: administer VERSED 0.1mg/kg IV/IO/IN/IM — may repeat 1x PRN in 5 minutes"
+          ]
+        },
+        {
+          id: "sepsis",
+          title: "Sepsis",
+          scenario: "A nursing home resident with fever, productive cough, confusion, and a MAP of 58. She is tachycardic and tachypneic.",
+          steps: [
+            "Administer OXYGEN only if SpO2 < 94%, titrate to maintain at least 94%",
+            "Establish 2 large bore IVs; administer NORMAL SALINE 20mL/kg IV/IO regardless of BP — titrate to MAP of at least 70 mmHg",
+            "Administer CEFEPIME or ROCEPHIN 2 grams IV drip (lab standard: 2g in NS 50mL run at 1 gtt/sec)",
+            "If patient remains hypotensive: prepare Push-Pressor Epinephrine 1:100,000 and administer at 1mL/minute IV/IO — titrate to age-appropriate BP, may repeat 1x PRN, max dose 0.2mg (20mL)"
+          ]
+        },
+        {
+          id: "stroke",
+          title: "Stroke",
+          scenario: "A 71-year-old found by family with sudden facial droop, arm drift, and slurred speech that started 45 minutes ago.",
+          steps: [
+            "Call a STROKE ALERT; provide the hospital with last known well time, medications including blood thinners, blood glucose, and patient deficits",
+            "Minimize on-scene time to 10 minutes if possible",
+            "Place patient supine (unless diagnosed intracerebral bleed or short of breath)",
+            "Administer OXYGEN via NC or NRM if SpO2 < 94%; manage airway and consider advanced airway if in respiratory distress",
+            "Establish two large bore IVs if possible",
+            "Transport to the appropriate stroke facility (pediatric stroke alerts to Joe DiMaggio or Broward Health Medical)"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Cardiac Emergencies",
+      protocols: [
+        {
+          id: "rapid-afib",
+          title: "Rapid Atrial Fibrillation/Flutter",
+          scenario: "A 67-year-old with palpitations and lightheadedness. Monitor shows an irregular rhythm at 162 bpm.",
+          steps: [
+            "Obtain a 12-lead and leave cables connected",
+            "If STABLE: establish IV access, monitor and transport",
+            "If UNSTABLE (chest pain, AMS, SOB, hypotension): administer NORMAL SALINE 20mL/kg IV/IO titrated to effect, may repeat 1x",
+            "Administer CARDIZEM: first dose 0.25mg/kg IV/IO, second dose 0.35mg/kg IV/IO",
+            "Consider sedation with VERSED 5mg, then perform SYNCHRONIZED CARDIOVERSION — irregular narrow: 120J, 200J, 300J, 360J; regular narrow: 50J and increase PRN",
+            "If still hypotensive: administer additional Normal Saline 20mL/kg assessing lung sounds every 500mL",
+            "If patient remains hypotensive: administer Push-Pressor Epinephrine 1:100,000 at 1mL/minute IV/IO titrated to BP — may repeat 1x PRN, max 0.2mg (20mL)"
+          ]
+        },
+        {
+          id: "bradycardia",
+          title: "Bradycardia",
+          scenario: "A 75-year-old male is dizzy and diaphoretic. Heart rate on the monitor is 36 with a regular rhythm. SBP is 78.",
+          steps: [
+            "If STABLE: monitor and transport; obtain and leave 12-lead cables connected",
+            "If UNSTABLE (chest pain, SOB, AMS, hypotension): administer ATROPINE 1mg IVP — may repeat PRN every 3–5 minutes, max cumulative 3mg (contraindicated: bradycardia with MI, 2nd degree Type II & 3rd degree blocks)",
+            "Administer NORMAL SALINE 20mL/kg IV/IO titrated to effect, assessing lung sounds frequently — may repeat 1x PRN",
+            "If patient deteriorates or hypotension persists after 2 doses Atropine: begin TRANSCUTANEOUS PACING at initial rate 80 BPM, increasing milliamps until capture",
+            "Consider VERSED 5mg IV/IO for sedation during pacing — may repeat 1x PRN, max 10mg (do NOT delay pacing to administer sedation)",
+            "If hypotension persists: administer Push-Pressor Epinephrine 1:100,000 at 1mL/minute IV/IO titrated to BP — may repeat 1x PRN, max 0.2mg (20mL)",
+            "Special note: if bradycardia with an MI and hypotension, go directly to transcutaneous pacing — Atropine increases myocardial ischemia and infarct size"
+          ]
+        },
+        {
+          id: "cardiogenic-shock",
+          title: "Cardiogenic Shock",
+          scenario: "Following a massive MI, a 64-year-old is hypotensive at 74/40, cool and clammy, with bilateral crackles to the mid-lung fields.",
+          steps: [
+            "Obtain a 12-lead",
+            "For left ventricular failure (pulmonary edema + hypotension): prepare Push-Pressor Epinephrine 1:100,000 by discarding 9mL of Epi 1:10,000 and adding 9mL Normal Saline; administer at 1mL/minute IV/IO titrated to age-appropriate BP — may repeat 1x PRN, max 0.2mg (20mL)",
+            "For right ventricular failure (positive V4R, clear lung sounds, hypotension): administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — may repeat 2x PRN",
+            "If patient remains hypotensive after fluids: administer Push-Pressor Epinephrine 1:100,000 as above"
+          ]
+        },
+        {
+          id: "hypertensive-emergency",
+          title: "Hypertensive Emergency",
+          scenario: "A 55-year-old with a BP of 240/130, severe headache, and blurred vision. No other focal neuro deficits.",
+          steps: [
+            "Treat based on signs and symptoms per the appropriate protocol:",
+            "Chest pain → Chest Pain protocol",
+            "SOB with pulmonary edema/CHF → CHF protocol",
+            "Pregnant 2nd/3rd trimester or postpartum → Pre-Eclampsia/Eclampsia protocol",
+            "Stroke-like symptoms → Stroke protocol with stroke scale"
+          ]
+        },
+        {
+          id: "chest-pain",
+          title: "Chest Pain",
+          scenario: "A 50-year-old male with crushing chest pain radiating to his left arm, started 20 minutes ago while mowing the lawn. Diaphoretic, BP 148/90.",
+          steps: [
+            "Obtain a 12-lead EKG immediately",
+            "Administer ASPIRIN 162–324mg PO (contraindicated: active GI bleeding, age < 16)",
+            "Administer OXYGEN to maintain SpO2 at 95% or above",
+            "Establish an IV before administering Nitroglycerin, even if normotensive",
+            "Administer NITROGLYCERIN 0.4mg SL — may repeat 2x PRN in 5 minute intervals (contraindicated: SBP < 90, positive V4R, HR < 50, recent ED medication use)",
+            "If pain persists: administer FENTANYL 100mcg IV/IO/IN/IM — may repeat PRN after 5 minutes, max total 200mcg",
+            "Administer ZOFRAN 4mg IV/IO/IM — may repeat once PRN (contraindicated near-term pregnancy or active labor)",
+            "If hypotension from Fentanyl: administer NORMAL SALINE 1–2L, assessing lung sounds and BP every 500mL"
+          ]
+        },
+        {
+          id: "stemi-alert",
+          title: "STEMI Alert",
+          scenario: "12-lead shows 3mm ST elevation in leads II, III, and aVF with ongoing chest pain. HR 88, BP 102/68.",
+          steps: [
+            "Follow the Chest Pain protocol",
+            "Provide immediate notification to PCI facility with ECG transmission",
+            "Obtain V4R on patients with ST elevation in 2 or more inferior leads (II, III, aVF)",
+            "If positive V4R with hypotension and clear lung sounds: administer NORMAL SALINE 20mL/kg, assessing lung sounds and BP every 500mL — may repeat 2x PRN"
+          ]
+        },
+        {
+          id: "chf",
+          title: "CHF (Pulmonary Edema)",
+          scenario: "A 70-year-old with heart failure history is sitting upright in extreme distress, bilateral crackles to the mid-lung fields, and a BP of 188/110.",
+          steps: [
+            "Perform a 12-lead EKG",
+            "Attempt IV access prior to Nitroglycerin, but do not neglect correcting respiratory status first",
+            "Administer NITROGLYCERIN: 0.8mg SL (2 tabs) if SBP ≥ 160; 0.4mg SL (1 tab) if SBP 100–160 — may repeat 0.4mg every 5 minutes PRN (contraindicated: SBP < 90, HR < 50, STEMI, recent ED medication use)",
+            "Apply CPAP at 10 cm H2O (contraindicated: SBP < 90, no spontaneous respirations, decreased LOC)",
+            "Administer LASIX 40mg IV/IO (80mg if patient is currently prescribed Lasix)"
+          ]
+        },
+        {
+          id: "svt",
+          title: "Supraventricular Tachycardia (SVT)",
+          scenario: "A 22-year-old with sudden onset palpitations. Monitor shows a narrow, regular rhythm at 192 bpm. BP 100/70.",
+          steps: [
+            "If STABLE: attempt vagal maneuvers; consider Adenosine per protocol (do NOT administer to patients with heart transplant history or taking Tegretol/Persantine)",
+            "If UNSTABLE (chest pain, AMS, SOB, hypotension): consider VERSED 0.1mg/kg IV/IO for sedation — may repeat 1x PRN, max 10mg total",
+            "Perform SYNCHRONIZED CARDIOVERSION at 0.5–1J/kg; if rhythm does not break, increase to 2J/kg"
+          ]
+        },
+        {
+          id: "wide-complex-tachycardia",
+          title: "Wide Complex Tachycardia (WCT)",
+          scenario: "Monitor shows a wide bizarre QRS at 174 bpm in a 55-year-old with mild chest discomfort. Treat as V-tach.",
+          steps: [
+            "Obtain a 12-lead and leave cables connected; reassess every 5 minutes",
+            "If STABLE: administer AMIODARONE — dilute 150mg in D5W, infuse over 10 minutes via 10gtt set, administer all 150mg even if WCT terminates — may repeat 1x PRN, max 300mg (contraindicated: marked sinus bradycardia, cardiogenic shock, 2nd/3rd degree blocks, hypotension, QTc > 460)",
+            "If UNSTABLE: consider VERSED 5mg IV/IO (10mg IN/IM) for sedation — may repeat 1x PRN, max 10mg",
+            "Perform SYNCHRONIZED CARDIOVERSION at ascending settings: 100J, 200J, 300J, 360J (contraindicated for irregularly-irregular WCTs)",
+            "After conversion: administer AMIODARONE only if patient converted after 2 cardioversion attempts or 2+ ICD shocks — do NOT give if Amiodarone already administered"
+          ]
+        },
+        {
+          id: "polymorphic-vtach",
+          title: "Polymorphic V-Tach / RRWCT",
+          scenario: "Monitor shows a chaotic wide-complex rhythm with varying morphology at 180 bpm. Patient is conscious but feels faint. QTc is prolonged.",
+          steps: [
+            "Obtain 12-lead ECG; leave cables connected; repeat every 5 minutes",
+            "If STABLE Polymorphic V-tach: administer MAGNESIUM SULFATE — dilute 1–2g in D5W, administer IV/IO via 10gtt set run wide open (contraindicated: 2nd/3rd degree heart blocks)",
+            "If Magnesium converts rhythm: start maintenance infusion of Magnesium 1g in 250mL Normal Saline at 30–60 gtt/min via 60gtt set",
+            "If UNSTABLE (chest pain, SOB, AMS, hypotension): do NOT delay defibrillation to establish IV — defibrillate at 360J",
+            "If converts after defibrillation and Magnesium not yet given: administer Magnesium Sulfate as above",
+            "For STABLE Regular Really Wide Complex Tachycardia (RRWCT): administer CALCIUM CHLORIDE 1g in D5W over 2 minutes IV/IO AND SODIUM BICARBONATE 50mEq slow IV/IO over 2 minutes (never in same line as Calcium Chloride)",
+            "If UNSTABLE RRWCT: do not delay cardioversion; consider VERSED 5mg IV/IO for sedation, then SYNCHRONIZED CARDIOVERSION at 100J, 200J, 300J, 360J"
+          ]
+        },
+        {
+          id: "cardiac-arrest",
+          title: "Cardiac Arrest (ACLS/PALS)",
+          scenario: "You arrive to find a 60-year-old unresponsive and pulseless. Bystander CPR is in progress. Monitor shows VFib.",
+          steps: [
+            "Perform high-quality CPR; pre-charge the monitor 15 seconds before each 2-minute rhythm check",
+            "Check pulse only with final compressions; assessment no longer than 10 seconds",
+            "If witnessed arrest with VFib/Pulseless VTach: continue compressions until monitor charged, then defibrillate immediately",
+            "Administer EPINEPHRINE 1:10,000 every 3–5 minutes — never delay; administer ASAP on first round if IV already established",
+            "Plan A (odd rounds — shockable): defibrillate, followed by Epi 1:10,000",
+            "Plan B (even rounds — still shockable): defibrillate at next energy setting, plus administer AMIODARONE",
+            "Consider H's and T's to identify the etiology of the arrest"
+          ]
+        },
+        {
+          id: "rosc",
+          title: "Return of Spontaneous Circulation (ROSC)",
+          scenario: "After 3 rounds of CPR and defibrillation, a pulse returns at a heart rate of 110 bpm.",
+          steps: [
+            "Obtain a 12-lead EKG",
+            "Manage rate per the specific rate-related protocol (Bradycardia or Tachycardia protocol)",
+            "Manage rhythm per the specific rhythm-related protocol",
+            "Manage blood pressure per the hypotension/shock protocol"
+          ]
+        },
+        {
+          id: "cardiac-arrest-special",
+          title: "Cardiac Arrest — Special Considerations",
+          scenario: "A third-trimester pregnant patient collapses into cardiac arrest at the scene of an electrical fire.",
+          steps: [
+            "For 3rd trimester non-traumatic arrest: manually displace uterus to the left during CPR; transport to closest OB hospital",
+            "For electrocution (AC) arrest: immediate defibrillation as applicable; consider selective spinal restriction; transport as Trauma Alert",
+            "For lightning strike (DC) arrest: immediate defibrillation as applicable; if multiple victims triage in reverse order prioritizing arrest patients; consider spinal restriction; transport as Trauma Alert",
+            "For arrest during or within 6 hours of a fire: treat for Cyanide Exposure per that protocol"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Overdose / Toxicology",
+      protocols: [
+        {
+          id: "overdose-standing-orders",
+          title: "Overdose Standing Orders",
+          scenario: "A patient is found unresponsive next to several empty pill bottles. Exact substance is unknown.",
+          steps: [
+            "Contact Florida Poison Control Center at 1-800-222-1222 as soon as possible; follow their recommendations and document the representative's name on the ePCR",
+            "Collect pill bottles for count and identification",
+            "Support the ABCs; terminate seizures and lethal cardiac arrhythmias per appropriate protocols",
+            "Use caution with IV fluids — many OD medications depress myocardial contractility; assess lung sounds and BP every 500mL"
+          ]
+        },
+        {
+          id: "beta-blocker-od",
+          title: "Beta Blocker Overdose",
+          scenario: "A patient on Metoprolol is found bradycardic at 38 bpm and hypotensive after suspected intentional overdose.",
+          steps: [
+            "Obtain a 12-lead and leave cables connected; if confirmed and unstable refer to Bradycardia protocol",
+            "If isolated hypotension only: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — may repeat 1x PRN",
+            "Administer GLUCAGON 1mg/min IV/IO, max 10mg"
+          ]
+        },
+        {
+          id: "ccb-od",
+          title: "Calcium Channel Blocker Overdose",
+          scenario: "A Diltiazem patient is severely hypotensive and confused after taking an unknown quantity of pills.",
+          steps: [
+            "Obtain a 12-lead and leave cables connected",
+            "If UNSTABLE: administer CALCIUM CHLORIDE — dilute 1g in D5W, administer IV/IO over 2 minutes",
+            "If patient remains hypotensive: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — may repeat 1x PRN",
+            "For hypotension with bradycardia not responding: refer to the Bradycardia protocol"
+          ]
+        },
+        {
+          id: "digitalis-toxicity",
+          title: "Digitalis Toxicity",
+          scenario: "An elderly patient on Digoxin has visual halos, fatigue, and the monitor shows new bigeminy and a bradycardic rate of 44.",
+          steps: [
+            "Contact Poison Information Center at 1-800-222-1222; verify toxicity by patient history or pill count",
+            "Do NOT administer Calcium Chloride (contraindicated in Digitalis Toxicity)",
+            "Obtain a 12-lead and leave cables connected",
+            "For digitalis-induced symptomatic bradycardia: administer ATROPINE 0.5–1mg rapid IVP followed by 20mL NS flush — may repeat once",
+            "Avoid pacing — patients with digitalis toxicity are prone to pacemaker-induced ventricular arrhythmias",
+            "If wide complex bradycardia (QRS > 0.12): administer SODIUM BICARBONATE 1mEq/kg IV",
+            "For STABLE ventricular arrhythmias: administer MAGNESIUM SULFATE 2g in D5W IV over 2 minutes via 10gtt set; then a maintenance infusion of 2g over 1 hour via 60gtt set",
+            "For UNSTABLE arrhythmias (HR > 150): consider VERSED 5mg IV/IO/IN for sedation, then SYNCHRONIZED CARDIOVERSION at 25J — may repeat twice at 50J",
+            "If cardiac arrest occurs: follow Cardiac Arrest protocol; if no response, reattempt defibrillation at 360J and administer MAGNESIUM 2g IV/IO over 5 minutes regardless of conversion"
+          ]
+        },
+        {
+          id: "narcotic-overdose",
+          title: "Narcotic Overdose",
+          scenario: "A 30-year-old is found unresponsive with pinpoint pupils, RR of 4, and a needle nearby.",
+          steps: [
+            "If spontaneous/adequate respirations, SpO2 > 92%, and EtCO2 < 45mmHg: provide supplemental oxygen or BVM assist only — do NOT administer Narcan",
+            "If vitals not within those parameters: administer NARCAN 2.0mg IV/IO/IM/IN adult; 0.1mg/kg pediatric — may repeat PRN to achieve adequate respirations"
+          ]
+        },
+        {
+          id: "tca-overdose",
+          title: "Tricyclic Antidepressant (TCA) Overdose",
+          scenario: "A patient took unknown Amitriptyline quantity. He is dry, flushed, hot, confused, with a QRS of 0.14 on the monitor.",
+          steps: [
+            "Obtain a 12-lead and leave cables connected",
+            "For QRS > 0.10 seconds adult (or > 0.08 seconds pediatric): administer SODIUM BICARBONATE — adult: 50mEq slow IV/IO over 2 minutes, may repeat 2x PRN in 5 minute intervals, max 150mEq; pediatric: 1mEq/kg over 2 minutes, may repeat 2x PRN",
+            "Discontinue Sodium Bicarbonate once QRS narrows below threshold",
+            "If patient remains hypotensive: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — adult may repeat 1x PRN; pediatric may repeat 1x PRN, max 60mL/kg"
+          ]
+        },
+        {
+          id: "organophosphate-poisoning",
+          title: "Organophosphate Poisoning",
+          scenario: "A farm worker has excessive salivation, tearing, muscle twitching, severe difficulty breathing, and loss of bowel/bladder control after pesticide exposure.",
+          steps: [
+            "Contact the Florida Poison Information Center: 1-800-222-1222",
+            "For adult MILD symptoms (2+ of: miosis, tearing, salivation, chest tightness, wheezing, muscle twitching, nausea, bradycardia/tachycardia): administer ATROPINE 2mg IV/IO — if severe symptoms develop within 10 minutes, give ATROPINE 4mg IV/IO, OR 1 DuoDote injection into mid-lateral thigh",
+            "For adult SEVERE symptoms (AMS, severe dyspnea, airway secretions, seizures, loss of bowel/bladder control): administer ATROPINE 6mg IV/IO, OR 3 DuoDote injections into mid-lateral thigh in rapid succession",
+            "Manage airway for excessive secretions; refer to Seizure protocol if actively seizing",
+            "For pediatric symptomatic patients: administer ATROPINE 0.05mg/kg IV/IO, repeat every 20–30 minutes PRN for continued symptoms"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Pain Management",
+      protocols: [
+        {
+          id: "pain-management",
+          title: "Pain Management",
+          scenario: "A patient with an isolated femur fracture rates their pain 9 out of 10. No respiratory depression.",
+          steps: [
+            "Administer FENTANYL (adult) 100mcg IV/IO/IN/IM — may repeat PRN after 5 minutes, max total dose 200mcg (caution: history of opiate abuse/drug-seeking behavior)",
+            "Monitor for respiratory depression; discontinue if patient becomes drowsy (reversible with Narcan if necessary)",
+            "For pediatric patients: administer FENTANYL 0.5mcg/kg IV/IO over 2 minutes, or 1.5mcg/kg IN/IM — may repeat either route 1x PRN in 5 minutes"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Environmental Emergencies",
+      protocols: [
+        {
+          id: "bites-stings",
+          title: "Bites and Stings",
+          scenario: "A hiker was bitten on the lower leg by a rattlesnake 30 minutes ago. Significant swelling and pain are noted.",
+          steps: [
+            "For all bites/stings: clean wound with soap and water or sterile water (except marine animal stings); refer to Allergic Reaction protocol if applicable",
+            "For snake bites: do NOT apply ice, tourniquets, or constrictive bands; wash with copious water; mark edema margins with a pen; remove constrictive jewelry/clothing; splint below the heart; call Venom One at 786-229-0736",
+            "For insect stings: scrape stinger off with flat edge (do NOT pull); clean with soap and water",
+            "For marine envenomations (stingray, lionfish): immerse punctures in non-scalding hot water for 30–90 minutes for pain relief",
+            "For marine stings (jellyfish): rinse with sea water — do NOT use fresh water, ice, or rub the skin; apply white vinegar topically if available; remove large tentacle fragments with forceps wearing PPE"
+          ]
+        },
+        {
+          id: "decompression-sickness",
+          title: "Decompression Sickness",
+          scenario: "A diver surfaces too quickly and complains of severe joint pain and confusion. He used SCUBA 2 hours ago.",
+          steps: [
+            "Transport to St. Mary's or Mercy Hyperbaric Chamber; secure dive gear and dive history if possible",
+            "Contact DAN (Diver Alert Network) at (919) 684-9111 for medical consultation; follow their recommendations",
+            "Transport patient supine; rule out tension pneumothorax; refer to appropriate protocol for cardiac arrhythmias",
+            "Administer OXYGEN 15 LPM via NRB regardless of SpO2",
+            "Administer NORMAL SALINE: adult 500mL IV/IO regardless of BP; pediatric 20mL/kg IV/IO — assess lung sounds frequently; decrease to KVO if SOB, decreased breath sounds, or coughing blood"
+          ]
+        },
+        {
+          id: "heat-emergencies",
+          title: "Heat Emergencies",
+          scenario: "A construction worker collapses on a 98°F day. He is confused, has hot dry skin, and a temperature of 106°F.",
+          steps: [
+            "Move patient into the rescue, decrease AC temperature; obtain and continuously monitor core temperature; remove excessive clothing",
+            "Encourage salt-containing fluids if the patient can swallow safely",
+            "For heat cramps/exhaustion: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — adult may repeat 2x PRN; pediatric (newborn 10mL/kg) may repeat 2x PRN",
+            "For heat stroke (temp > 104°F or AMS): apply ICE PACKS to axilla and groin; cold water immersion on scene until core temp reaches 102°F",
+            "Administer NORMAL SALINE (cold preferred): adult 20mL/kg IV/IO titrated to effect, may repeat 1x PRN; pediatric 20mL/kg IV/IO, may repeat 2x PRN",
+            "If athletic trainer has already started cold water immersion: do not interrupt cooling — continue evaluating during the process"
+          ]
+        },
+        {
+          id: "carbon-monoxide",
+          title: "Carbon Monoxide Exposure",
+          scenario: "Multiple family members have headaches, nausea, and dizziness inside a home with a malfunctioning furnace. SpCO reads 28%.",
+          steps: [
+            "Administer OXYGEN 15 LPM via NRB regardless of SpO2 unless ventilatory support is needed",
+            "Consider Advanced Airway Protocol if SpCO > 20% or patient presents with symptoms (headache, nausea, dizziness, AMS, chest pain, dyspnea, seizures)",
+            "Consider transport to St. Mary's or a hyperbaric chamber facility",
+            "Strongly consider hyperbaric treatment for all pediatric and obstetric patients with confirmed CO exposure regardless of SpCO or symptoms"
+          ]
+        },
+        {
+          id: "cyanide-exposure",
+          title: "Cyanide Exposure",
+          scenario: "A firefighter exits a structure fire and is confused with dilated pupils and excessive sleepiness despite a normal SpO2.",
+          steps: [
+            "Administer OXYGEN 15 LPM via NRB regardless of SpO2 unless ventilatory support needed; consider Advanced Airway Protocol if needed",
+            "Reconstitute the CYANOKIT 5g vial with 200mL Normal Saline via transfer spike; fill to fill line with vial upright; mix by rocking/rotating for 30 seconds — do NOT shake",
+            "Use vented IV tubing; administer adult dose 5g IV/IO infused over 15 minutes at 5gtt/sec — may repeat 1x PRN through a separate/dedicated IV/IO line",
+            "For pediatric: administer 70mg/kg — may repeat 1x PRN, max 5g, through a separate/dedicated IV/IO line"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Trauma",
+      protocols: [
+        {
+          id: "marches",
+          title: "MARCHES Protocol",
+          scenario: "You arrive on a multi-system trauma scene with an active arterial bleed from a thigh wound and partial airway obstruction from facial trauma.",
+          steps: [
+            "M — Massive hemorrhage: control first",
+            "A — Airway control",
+            "R — Respiratory support",
+            "C — Circulation",
+            "H — Hypothermia prevention",
+            "E — Expose: remove only as much clothing as necessary, then cover patient to maintain warmth",
+            "S — Spinal Motion Restriction: apply cervical collar and manual stabilization if focal neuro deficit, neck/back pain, distracting injury, AMS with MOI, or intoxication with MOI",
+            "For helmet removal: remove helmets without shoulder pads (e.g. motorcycle); perform spinal motion restriction manually during removal; transport the helmet with the patient"
+          ]
+        },
+        {
+          id: "whole-blood-txa",
+          title: "Whole Blood / TXA",
+          scenario: "An adult trauma patient has significant blood loss from a motor vehicle collision and is hypotensive at 78/50.",
+          steps: [
+            "Administer WHOLE BLOOD: 1 unit (500mL) with 250mL Normal Saline via Y-tubing with blood warmer and pressure infuser using O-positive blood — if adverse reaction beyond urticaria occurs, discontinue immediately and administer Benadryl",
+            "Administer TRANEXAMIC ACID (TXA): dilute 2g in 50mL D5W via 10gtt set at 1gtt/sec (contraindicated: time of injury over 3 hours and/or GI bleed)"
+          ]
+        },
+        {
+          id: "bleeding-control",
+          title: "Bleeding Control",
+          scenario: "A patient has an arterial bleed from a deep laceration to the mid-thigh after a chainsaw injury. Blood is spurting.",
+          steps: [
+            "Apply direct pressure with manual pressure and a pressure dressing",
+            "Apply a Combat Application Tourniquet (CAT) 2–3 inches above the bleeding site until bleeding stops — do NOT place directly over the injury or a joint",
+            "If bleeding persists after first CAT: apply a second CAT",
+            "If bleeding persists after second CAT: pack wound with Hemostatic Agent, maintain pressure for at least 1 minute, then apply a pressure dressing",
+            "For junctional hemorrhage (neck, axillary, pelvis, groin): apply Hemostatic Agent, pack wound, maintain pressure 1+ minute, apply pressure dressing (occlusive if neck wound)",
+            "For amputation: rinse part, wrap in sterile gauze, place in sealed bag, place that bag in a second bag with ice packs; label with patient name, date, time of amputation, and time wrapped/cooled",
+            "For impaled objects: stabilize to prevent movement; control bleeding with direct pressure around the object — do NOT apply excessive pressure and do NOT palpate the abdomen"
+          ]
+        },
+        {
+          id: "evisceration",
+          title: "Evisceration",
+          scenario: "A patient has an abdominal stab wound with protruding bowel loops.",
+          steps: [
+            "Cover the protruding tissue with a moist sterile dressing, then cover with a dry sterile dressing — do NOT attempt to replace or move the tissue",
+            "Administer CEFEPIME or ROCEPHIN 2 grams IV drip (lab standard: 2g in NS 50mL run at 1 gtt/sec)"
+          ]
+        },
+        {
+          id: "burn-injuries",
+          title: "Burn Injuries",
+          scenario: "A patient has burns covering 30% TBSA from a house fire, with some areas appearing white and leathery. Airway is patent.",
+          steps: [
+            "Consider advanced airway for respiratory involvement (carbonaceous sputum, stridor, facial burns)",
+            "Do NOT remove tar or clothing adhered to skin; remove jewelry and watches from burned areas",
+            "Refer to Pain Management protocol; do NOT use IM route over affected area for medications",
+            "Consider Carbon Monoxide and Cyanide exposure protocols; keep patient warm with dry outer dressings",
+            "For 1st/2nd degree burns or 3rd degree < 10% TBSA: irrigate with copious room-temperature Normal Saline for 2 minutes (never apply ice directly); apply dry sterile or burn gel dressing",
+            "For 2nd/3rd degree burns ≥ 10% TBSA: apply dry sterile burn sheet; turn off AC in the truck",
+            "Calculate fluid resuscitation using Modified Parkland Formula: Fluid (mL) = 0.25mL × kg × %TBSA burned, for the first hour",
+            "For electrical burns: treat associated burns as indicated; if cardiac arrest, follow appropriate protocol",
+            "For chemical burns: brush off dry chemicals first; irrigate with copious water/saline for 15 minutes; remove clothing and decontaminate before transport wearing appropriate PPE"
+          ]
+        },
+        {
+          id: "chest-trauma",
+          title: "Chest Trauma",
+          scenario: "A patient was stabbed in the right chest. You hear a sucking sound with each breath and note absent breath sounds on the right side.",
+          steps: [
+            "For Flail Chest (3+ adjacent ribs fractured in 2+ places): stabilize with a bulky dressing; consider advanced airway if needed",
+            "For Open Pneumothorax (sucking chest wound): apply a vented chest seal or 3-sided occlusive dressing; monitor for tension pneumothorax; use a 4-sided dressing if there is a secondary exit wound",
+            "For Tension Pneumothorax: perform needle decompression when ALL present — respiratory distress/difficulty bagging, decreased/absent breath sounds on affected side, SBP < 90, and hyperresonance on percussion",
+            "Needle decompression sites: primary 2nd/3rd intercostal space mid-clavicular line; secondary 5th intercostal space mid-axillary line",
+            "If hyporesonance on percussion (hemothorax): refer to Finger Thoracostomy protocol",
+            "For Finger Thoracostomy (imminent traumatic arrest with hypo-resonance): enter at 4th/5th intercostal space anterior axillary line; cover with occlusive dressing if large blood volume produced",
+            "For impaled chest objects: stabilize with a bulky dressing — do NOT remove"
+          ]
+        },
+        {
+          id: "crush-injury",
+          title: "Crush Injury",
+          scenario: "A construction worker was trapped under heavy debris for 50 minutes. His leg shows signs of significant muscle damage and rhabdomyolysis is suspected.",
+          steps: [
+            "Establish 2 large bore IVs (IO if unable to gain IV access)",
+            "Administer NORMAL SALINE 20mL/kg IV/IO, assessing lung sounds and BP every 500mL",
+            "For entrapment lasting longer than 30 minutes: administer SODIUM BICARBONATE 8.4% 50mEq slow IV/IO over 2 minutes",
+            "For suspected hyperkalemia: administer CALCIUM CHLORIDE 1g in D5W via 10gtt set over 2 minutes IV/IO (never in the same line as Sodium Bicarbonate)",
+            "Administer ALBUTEROL 2.5mg via nebulizer for suspected hyperkalemia"
+          ]
+        },
+        {
+          id: "eye-emergencies",
+          title: "Eye Emergencies",
+          scenario: "A patient splashed an unknown acid into both eyes at work. Significant pain and conjunctival injection are noted bilaterally.",
+          steps: [
+            "Contact Poison Control 1-800-222-1222; remove contact lenses if present",
+            "Irrigate the affected eye for a minimum of 20 minutes with Normal Saline, avoiding contamination of the unaffected eye; consider a Morgan Lens",
+            "Consider TETRACAINE for pain: 1 drop in each affected eye (contraindicated: penetrating injuries, Lidocaine allergy)",
+            "For penetrating injuries: stabilize the object; cover both eyes with gauze and eye shield — do NOT attempt to replace or move protruding tissue; keep patient calm",
+            "For protruding eyeball: cover the entire eye area with a rigid container"
+          ]
+        },
+        {
+          id: "head-injuries",
+          title: "Head Injuries / TBI",
+          scenario: "A patient fell from a 20-foot ladder. GCS is 8, one pupil is sluggish, and ETCO2 reads 52.",
+          steps: [
+            "Consider advanced airway management, especially with GCS < 9",
+            "If suspected high ICP/herniation (decline in GCS 2+ points, sluggish/nonreactive pupil, one-sided paralysis): elevate head of bed 30 degrees",
+            "Prevent the 3 H-Bombs: Hypoxemia (NRB at 15L minimum), Hyperventilation (maintain ETCO2 35–45), Hypotension (target SBP 120–130)",
+            "Administer OXYGEN to maintain SpO2 94%; ventilate to maintain ETCO2 30–35 mmHg",
+            "For suspected traumatic intracranial hemorrhage with GCS < 13: administer TRANEXAMIC ACID (TXA) — dilute 2g in 50mL D5W via 10gtt set at 1gtt/sec",
+            "If multisystem trauma with TBI: administer Low Titer O+ WHOLE BLOOD 1 unit (500mL) with 250mL Normal Saline via Y-tubing with blood warmer and pressure infuser"
+          ]
+        },
+        {
+          id: "hemorrhagic-shock",
+          title: "Hemorrhagic Shock",
+          scenario: "A trauma patient is pale, anxious, and tachycardic at 128 following significant blood loss at an MVC.",
+          steps: [
+            "Immediately control all major external hemorrhage",
+            "Maintain body temperature with blankets; consider increasing temperature in the patient compartment",
+            "Establish bilateral large bore vascular access using the largest catheter size possible",
+            "Administer Low Titer O+ WHOLE BLOOD: 1 unit (500mL) with 250mL Normal Saline via Y-tubing with blood warmer and pressure infuser — discontinue and give Benadryl if reaction beyond urticaria occurs",
+            "Administer TRANEXAMIC ACID (TXA): dilute 2g in 50mL D5W via 10gtt set at 1gtt/sec (contraindicated: injury over 3 hours old and/or GI bleed)"
+          ]
+        },
+        {
+          id: "neurogenic-shock",
+          title: "Neurogenic Shock",
+          scenario: "A patient with a suspected spinal cord injury has warm dry skin below the injury, a BP of 80/50, and a HR of 64.",
+          steps: [
+            "Maintain spinal precautions throughout care and transfer; maintain body temperature with blankets",
+            "Administer NORMAL SALINE 20mL/kg IV/IO titrated to effect, assessing lung sounds and BP frequently — may repeat 2x PRN",
+            "If patient remains hypotensive: administer Push-Pressor Epinephrine 1:100,000 at 1mL/minute IV/IO titrated to age-appropriate systolic BP — may repeat 1x PRN, max 0.2mg (20mL)"
+          ]
+        },
+        {
+          id: "fractures",
+          title: "Open & Closed Fractures",
+          scenario: "A patient fell off a bicycle and has an open midshaft femur fracture with the bone exposed through the skin.",
+          steps: [
+            "For closed fractures: splint in position found — make up to 2 attempts to reposition to normal anatomical alignment if no distal pulse or cannot transport; discontinue if severe pain or resistance; reassess neurovascular status before and after",
+            "For closed mid-shaft femur fractures: apply a traction splint (contraindicated: suspected pelvic fracture, open femur fracture, hip fracture, ankle/foot avulsion/amputation, or fracture distal to midshaft femur)",
+            "For open fractures: remove gross contamination if possible; cover with a moist sterile dressing; splint in position found (same repositioning exceptions apply)",
+            "For adult and pediatric open fractures: administer CEFEPIME or ROCEPHIN 2 grams IV drip"
+          ]
+        },
+        {
+          id: "pelvic-fractures",
+          title: "Pelvic Fractures / Hip Injuries",
+          scenario: "An elderly patient fell and has a shortened, externally rotated right leg with hip and pelvis pain and signs of shock.",
+          steps: [
+            "Use a scoop stretcher/combi board whenever possible; splint in position of comfort with pillows/blankets",
+            "Reassess neurovascular status before and after moving; do NOT use traction splints on suspected hip fractures or dislocations",
+            "Do NOT perform a pelvic rock — assess by gentle anterior-to-posterior and lateral pressure once only to identify crepitus/instability",
+            "Consider mechanical stabilization with a pelvic binder or sheet for unstable fractures",
+            "Assess and treat for shock per appropriate protocol"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Obstetrical Emergencies",
+      protocols: [
+        {
+          id: "ob-assessment",
+          title: "Obstetrical Patient Assessment",
+          scenario: "A 32-year-old at 34 weeks gestation calls 911 for contractions and clear fluid leaking from her vagina.",
+          steps: [
+            "Transport 3rd trimester patients not in active labor on their left side",
+            "If water has broken: document time, color of fluid, and odor",
+            "If blood is present: document time and best-estimate volume of blood loss",
+            "If baby is crowning: prepare for immediate field delivery — do NOT delay transport"
+          ]
+        },
+        {
+          id: "ectopic-spontaneous-abortion",
+          title: "1st/2nd Trimester Complications",
+          scenario: "A 1st trimester patient has sudden severe lower abdominal pain, vaginal bleeding, and referred left shoulder pain. BP is 88/50.",
+          steps: [
+            "Place loosely placed trauma pads over the vagina to help slow bleeding — do NOT pack the vagina",
+            "If hypotensive with active bleeding: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect — may repeat 1x PRN"
+          ]
+        },
+        {
+          id: "third-trimester-complications",
+          title: "3rd Trimester Complications",
+          scenario: "A woman at 36 weeks has sudden severe abdominal pain, dark red vaginal bleeding, a rigid abdomen, and a BP of 76/40.",
+          steps: [
+            "During transport: position patient with 4–6 inches of padding under the right side while maintaining normal anatomical alignment",
+            "For active bleeding: loosely place trauma pads over the vagina — do NOT pack the vagina",
+            "If patient becomes hypotensive: administer NORMAL SALINE 20mL/kg IV/IO titrated to effect, assessing lung sounds and BP — may repeat as needed",
+            "If cardiac arrest occurs: refer to Cardiac Arrest Special Considerations protocol"
+          ]
+        },
+        {
+          id: "pre-eclampsia-eclampsia",
+          title: "Severe Pre-Eclampsia / Eclampsia",
+          scenario: "A 36-week pregnant patient is actively seizing. BP is 180/120 and she has a severe headache and visual disturbances.",
+          steps: [
+            "If not in active labor (severe pre-eclampsia): administer MAGNESIUM SULFATE — dilute 2g in D5W, administer IV/IO over 5–10 minutes via 60gtt set run wide open (contraindicated: 2nd/3rd degree heart blocks)",
+            "If actively seizing (eclampsia): administer MAGNESIUM SULFATE — dilute 4g in D5W, administer IV/IO via 60gtt set run wide open",
+            "Administer VERSED 5mg IV/IO/IN/IM — may repeat 1x PRN in 5 minutes if seizure reoccurs, max total 10mg (contraindicated: hypotension)"
+          ]
+        },
+        {
+          id: "normal-delivery",
+          title: "Normal Vaginal Delivery",
+          scenario: "A patient is fully dilated with the baby's head crowning. Delivery is imminent.",
+          steps: [
+            "Position patient on her back with knees flexed and feet flat",
+            "Control delivery of the head with gentle perineal pressure — do NOT apply pressure to the fundus before birth, do NOT pull/push on the neonate, do NOT allow sudden hyperextension of the head",
+            "Once head delivers: suction the mouth first, then the nose",
+            "Support the head as it rotates; guide it downward to deliver the anterior shoulder, then upward to deliver the posterior shoulder and the rest of the body",
+            "Dry, warm, and stimulate the neonate; keep the neonate level with the placenta",
+            "Once cord stops pulsating (usually 3–5 minutes): clamp — first clamp 4 inches from the neonate, milk cord toward the mother, second clamp 2 inches from first, cut between clamps",
+            "Place neonate skin-to-skin on mother's chest and cover with a dry blanket",
+            "Record and document APGAR score at 1 and 5 minutes and the delivery time",
+            "After placenta delivers: apply firm continuous pressure and manually massage the uterine fundus",
+            "Preserve the placenta in the OB kit bag or a red bio-hazard bag for hospital inspection"
+          ]
+        },
+        {
+          id: "delivery-complications",
+          title: "Delivery Complications",
+          scenario: "During delivery, the baby's feet present first. The body has delivered but the head has not come out after 3 minutes.",
+          steps: [
+            "For Breech Birth (head not delivered within 3 minutes): elevate mother's hips into the knee-to-chest position",
+            "Insert a gloved hand into the vagina and push the vaginal wall away from the neonate's nose and mouth",
+            "Expedite transport while maintaining knee-to-chest position and the neonate's airway; administer blow-by OXYGEN to the neonate",
+            "For Shoulder Dystocia (difficulty delivering shoulders): perform the McRoberts Procedure — have the mother drop her buttocks off the edge of the bed if possible; hyperflex the mother's legs tightly to her abdomen; apply suprapubic pressure if necessary"
+          ]
+        }
+      ]
+    },
+    {
+      name: "Airway & Ventilation",
+      protocols: [
+        {
+          id: "foreign-body-airway",
+          title: "Foreign Body Airway Obstruction (FBAO)",
+          scenario: "A patient at a restaurant is clutching his throat and cannot speak, cough, or breathe effectively.",
+          steps: [
+            "Apply abdominal thrusts on a conscious patient until obstruction clears or patient becomes unresponsive (infants: 5 back slaps then 5 chest compressions)",
+            "If patient becomes unresponsive: begin chest compressions",
+            "If unable to relieve the FBAO: visualize with laryngoscope and extract with Magill forceps",
+            "If unable to extract or adequately ventilate: perform a cricothyrotomy"
+          ]
+        },
+        {
+          id: "rsi",
+          title: "Rapid Sequence Intubation (RSI)",
+          scenario: "A patient with severe airway swelling from facial burns cannot be effectively bagged or intubated without pharmacological assistance.",
+          steps: [
+            "For adult induction: administer ETOMIDATE 0.3mg/kg (max 30mg) IV/IO rapid push, OR KETAMINE 2mg/kg (max 200mg) IV/IO rapid push",
+            "Administer paralytic ROCURONIUM 100mg IV/IO",
+            "For pediatric induction: administer ETOMIDATE 0.3mg/kg (max 30mg) IV/IO rapid push, OR KETAMINE 1mg/kg (max 200mg) IV/IO rapid push",
+            "Administer paralytic ROCURONIUM 1mg/kg IV/IO"
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+
+// ============================================================
+// MATCHING ENGINE — compares user answer to the correct step
+// ============================================================
+
+const STOPWORDS = new Set(['the','a','an','to','of','in','on','for','and','or','with','is','are','was','were','be','been',
+  'at','by','as','it','this','that','these','those','if','then','may','will','shall','should','must','can',
+  'patient','patients','administer','administering','administered','give','given','via','per','their','they','them',
+  'once','using','use','do','not','no','before','after','into','onto','from','also','until','when','while',
+  'repeat','prn','x1','1x','2x','interval','intervals','minute','minutes','min','mins','consider','perform',
+  'apply','provide','assess','assessing','establish','obtain','recognize','signs','symptoms']);
+
+// Clinical synonym groups — each word in a group is normalized to the group's first (canonical) term
+const SYNONYM_GROUPS = [
+  ['epinephrine','epi'],
+  ['normalsaline','ns','saline','normal'],
+  ['benadryl','diphenhydramine'],
+  ['albuterol','ventolin'],
+  ['atrovent','ipratropium'],
+  ['solumedrol','methylprednisolone'],
+  ['narcan','naloxone'],
+  ['versed','midazolam'],
+  ['fentanyl','sublimaze'],
+  ['cardizem','diltiazem'],
+  ['zofran','ondansetron'],
+  ['lasix','furosemide'],
+  ['rocephin','ceftriaxone'],
+  ['cefepime','maxipime'],
+  ['oxygen','o2'],
+  ['twice','2x','two'],
+  ['intramuscular','im'],
+  ['intravenous','iv'],
+  ['intraosseous','io'],
+  ['bymouth','po','orally','oral'],
+  ['nebulizer','neb','nebulized'],
+  ['tourniquet','cat'],
+  ['ekg','ecg','electrocardiogram'],
+  ['cardioversion','cardiovert'],
+  ['defibrillate','defibrillation','shock'],
+  ['bloodpressure','bp'],
+  ['heartrate','hr','pulse'],
+  ['breathing','respirations','resp'],
+  ['lungsounds','lungs'],
+  ['hypertension','highbp','highbloodpressure'],
+  ['hypotension','lowbp','lowbloodpressure'],
+  ['tachycardia','fastheartrate','fasthr','fastpulse'],
+  ['bradycardia','slowheartrate','slowhr','slowpulse'],
+  ['rales','crackles'],
+  ['orthopnea','cantbreathelyingflat'],
+  ['edema','swelling','swollen'],
+  ['pediatric','peds','child','children','kid','infant'],
+  ['dyspnea','shortnessofbreath','sob','breathless'],
+  ['diaphoretic','sweaty','sweating'],
+  ['syncope','fainting','passedout','passingout'],
+  ['ams','alteredmentalstatus','confused','confusion'],
+  ['cyanosis','bluish'],
+  ['tachypnea','fastbreathing','rapidbreathing'],
+  ['bradypnea','slowbreathing'],
+  ['hyperglycemia','highbloodsugar','highbgl','highglucose'],
+  ['hypoglycemia','lowbloodsugar','lowbgl','lowglucose'],
+  ['urticaria','hives'],
+  ['emesis','vomit','vomiting','throwingup'],
+  ['nrb','nonrebreather','nonrebreathermask'],
+  ['bvm','bagvalvemask','bagging'],
+  ['fundus','uterus']
+];
+const SYN_MAP = {};
+SYNONYM_GROUPS.forEach(group => {
+  const canon = group[0];
+  group.forEach(term => { SYN_MAP[term] = canon; });
+});
+
+function normalizeWord(w){
+  // collapse common multi-word phrases pre-tokenization happens in tokenize(); here just map synonyms
+  return SYN_MAP[w] || w;
+}
+
+function tokenize(str){
+  let s = (str||'').toLowerCase();
+  // normalize a few multi-word clinical phrases into single tokens before splitting
+  s = s
+    .replace(/normal saline/g, 'normalsaline')
+    .replace(/blood pressure/g, 'bloodpressure')
+    .replace(/heart rate/g, 'heartrate')
+    .replace(/lung sounds/g, 'lungsounds')
+    .replace(/\bo2\s+sat\w*/g, 'spo2')
+    .replace(/by\s+mouth/g, 'bymouth')
+    .replace(/high\s+bp|elevated\s+bp|high\s+blood\s*pressure/g, ' hypertension ')
+    .replace(/low\s+bp|low\s+blood\s*pressure/g, ' hypotension ')
+    .replace(/fast\s+(heart\s*rate|hr|pulse)/g, ' tachycardia ')
+    .replace(/slow\s+(heart\s*rate|hr|pulse)/g, ' bradycardia ')
+    .replace(/fast\s+breathing|rapid\s+breathing/g, ' tachypnea ')
+    .replace(/slow\s+breathing/g, ' bradypnea ')
+    .replace(/short(ness)?\s+of\s+breath/g, ' dyspnea ')
+    .replace(/passed?\s+out|passing\s+out/g, ' syncope ')
+    .replace(/swollen\s+\w+|swelling/g, ' edema ')
+    .replace(/throwing\s+up|threw\s+up/g, ' emesis ')
+    .replace(/altered\s+mental\s+status/g, ' ams ')
+    .replace(/can'?t\s+breathe\s+lying\s+(down|flat)|trouble\s+breathing\s+lying\s+(down|flat)/g, ' orthopnea ')
+    .replace(/\bx\s?2\b|\b2\s?x\b|\btwo times\b|\btwice\b/g, ' 2x ')
+    .replace(/(\d+)-(lead|degree|year|inch|hour|minute|second)/g, '$1 $2'); // "12-lead" -> "12 lead"
+  return s
+    .replace(/[°]/g, '')
+    .replace(/[^a-z0-9.%/<>=+\- ]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(normalizeWord);
+}
+
+const SOFT_WORDS = new Set(['immediately','frequently','rapid','rapidly','slow','slowly','gentle','gently','possible']);
+
+function meaningfulTokens(str){
+  return tokenize(str).filter(t => !STOPWORDS.has(t) && !SOFT_WORDS.has(t) && t.length > 1);
+}
+
+// Known drug/intervention names worth checking explicitly (lowercase, canonical form after synonym mapping)
+const KNOWN_DRUGS = ['epinephrine','benadryl','albuterol','atrovent','solumedrol','narcan','versed','fentanyl',
+  'cardizem','zofran','lasix','rocephin','cefepime','atropine','glucagon','dextrose','aspirin','nitroglycerin',
+  'magnesium','calcium','sodiumbicarbonate','sodium','bicarbonate','amiodarone','adenosine','ketamine','etomidate',
+  'rocuronium','tranexamic','txa','tetracaine','oxygen','dopamine','morphine','duodote'];
+
+function extractKeyFacts(stepText){
+  const facts = { numbers: [], drugs: [] };
+  const numMatches = stepText.match(/[0-9]+(\.[0-9]+)?\s*(mg\/kg|mcg\/kg|ml\/kg|g\/kg|mg|mcg|ml|mL|l|lpm|mmhg|j\/kg|j|joules|gtt|min|minutes|sec|seconds|%|degrees|mEq)/gi) || [];
+  facts.numbers = numMatches.map(s => s.toLowerCase().replace(/\s+/g,''));
+
+  const lowerTokens = tokenize(stepText);
+  facts.drugs = lowerTokens.filter(t => KNOWN_DRUGS.includes(t));
+  // dedupe
+  facts.drugs = [...new Set(facts.drugs)];
+
+  return facts;
+}
+
+function jaccardSimilarity(setA, setB){
+  if(setA.length===0 && setB.length===0) return 1;
+  const a = new Set(setA), b = new Set(setB);
+  let intersection = 0;
+  for(const x of a){ if(b.has(x)) intersection++; }
+  const union = new Set([...a, ...b]).size;
+  return union===0 ? 0 : intersection/union;
+}
+
+// Levenshtein-based fuzzy token match: counts a user token as "hit" if it closely matches any correct token
+function fuzzyTokenOverlap(userTokens, correctTokens){
+  let hits = 0;
+  const usedCorrect = new Set();
+  for(const ut of userTokens){
+    let bestMatch = null, bestDist = Infinity;
+    for(let i=0;i<correctTokens.length;i++){
+      if(usedCorrect.has(i)) continue;
+      const ct = correctTokens[i];
+      if(ut === ct){ bestDist = 0; bestMatch = i; break; }
+      if(Math.abs(ut.length-ct.length) > 3) continue;
+      const d = levenshtein(ut, ct);
+      const threshold = ct.length <= 4 ? 1 : (ct.length <= 7 ? 2 : 3);
+      if(d <= threshold && d < bestDist){ bestDist = d; bestMatch = i; }
+    }
+    if(bestMatch !== null){ hits++; usedCorrect.add(bestMatch); }
+  }
+  return hits;
+}
+
+function levenshtein(a, b){
+  const m = a.length, n = b.length;
+  if(m===0) return n;
+  if(n===0) return m;
+  const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      if(a[i-1]===b[j-1]) dp[i][j] = dp[i-1][j-1];
+      else dp[i][j] = 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Evaluate a user's answer against the correct step text.
+ * Returns { verdict: 'correct'|'partial'|'incorrect', score: 0-1, missedFacts: [], whyText: string }
+ */
+function evaluateAnswer(userAnswer, correctStep){
+  const trimmed = (userAnswer||'').trim();
+  if(trimmed.length === 0){
+    return { verdict:'incorrect', score:0, whyText: "No answer entered — here's the correct step." };
+  }
+
+  // Strip parenthetical caveats (contraindications, cautions) from the scoring target —
+  // these are warnings the reveal still shows, but shouldn't count against the user for omitting.
+  const coreStep = correctStep.replace(/\((?:contraindicated|caution|note)[^)]*\)/gi, '');
+
+  const userTokens = meaningfulTokens(trimmed);
+  const correctTokens = meaningfulTokens(coreStep);
+
+  const overlapHits = fuzzyTokenOverlap(userTokens, correctTokens);
+  const coverage = correctTokens.length ? overlapHits / correctTokens.length : 0;
+  const precision = userTokens.length ? overlapHits / userTokens.length : 0;
+
+  const keyFacts = extractKeyFacts(coreStep);
+  const userKeyFacts = extractKeyFacts(trimmed);
+  const numberSim = jaccardSimilarity(keyFacts.numbers, userKeyFacts.numbers);
+  const drugSim = jaccardSimilarity(keyFacts.drugs, userKeyFacts.drugs);
+
+  // Weighted composite score: coverage of correct content matters most,
+  // bonus weight on getting key doses/drug names right since those are clinically critical.
+  let score = coverage * 0.65 + precision * 0.1;
+  if(keyFacts.numbers.length > 0) score += numberSim * 0.13; else score += 0.13;
+  if(keyFacts.drugs.length > 0) score += drugSim * 0.12; else score += 0.12;
+
+  score = Math.max(0, Math.min(1, score));
+
+  let verdict;
+  if(score >= 0.5) verdict = 'correct';
+  else if(score >= 0.26) verdict = 'partial';
+  else verdict = 'incorrect';
+
+  // Build a "why" explanation
+  let whyParts = [];
+  if(verdict === 'correct'){
+    whyParts.push("Your answer captures the key action" + (keyFacts.numbers.length || keyFacts.drugs.length ? " and the critical details." : "."));
+    if(keyFacts.numbers.length > 0 && numberSim < 0.99){
+      whyParts.push("Double check the exact dose/number against the reveal below.");
+    }
+  } else if(verdict === 'partial'){
+    whyParts.push("You're on the right track, but missing some important specifics.");
+    if(keyFacts.drugs.length > 0 && drugSim < 0.5){
+      whyParts.push("Check the medication name(s) involved.");
+    }
+    if(keyFacts.numbers.length > 0 && numberSim < 0.5){
+      whyParts.push("Check the dose, route, or numeric threshold.");
+    }
+    if(coverage < 0.4){
+      whyParts.push("There's also more to this step than what you wrote — see the full step below.");
+    }
+  } else {
+    whyParts.push("This doesn't match the next step in the protocol. Review the correct step below and try to commit it to memory.");
+  }
+
+  return { verdict, score, whyText: whyParts.join(' ') };
+}
+
+// ============================================================
+// LOCAL STORAGE LAYER
+// ============================================================
+const STORAGE_KEY = 'protocolDrill_v1';
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return { protocols: {}, totalDrills: 0 };
+    const parsed = JSON.parse(raw);
+    if(!parsed.protocols) parsed.protocols = {};
+    if(typeof parsed.totalDrills !== 'number') parsed.totalDrills = 0;
+    return parsed;
+  }catch(e){
+    console.warn('Could not load progress', e);
+    return { protocols: {}, totalDrills: 0 };
+  }
+}
+
+function saveProgress(progress){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  }catch(e){
+    console.warn('Could not save progress', e);
+  }
+}
+
+let PROGRESS = loadProgress();
+
+function getProtocolProgress(id){
+  if(!PROGRESS.protocols[id]){
+    PROGRESS.protocols[id] = { attempts: 0, bestScore: 0, lastScore: null, mastered: false, lastMissedSteps: [] };
+  }
+  return PROGRESS.protocols[id];
+}
+
+function recordAttempt(id, scorePct, missedStepIndices){
+  const p = getProtocolProgress(id);
+  p.attempts += 1;
+  p.lastScore = scorePct;
+  p.bestScore = Math.max(p.bestScore, scorePct);
+  p.mastered = scorePct >= 90;
+  p.lastMissedSteps = missedStepIndices;
+  PROGRESS.totalDrills += 1;
+  saveProgress(PROGRESS);
+}
+
+// ============================================================
+// APP STATE
+// ============================================================
+const ALL_PROTOCOLS = [];
+PROTOCOL_DATA.categories.forEach(cat => {
+  cat.protocols.forEach(p => ALL_PROTOCOLS.push(Object.assign({ category: cat.name }, p)));
+});
+
+function findProtocol(id){ return ALL_PROTOCOLS.find(p => p.id === id); }
+
+const State = {
+  view: 'home',          // home | drill | summary | walk | pharm
+  activeProtocolId: null,
+  practiceOnlyMissed: false,
+  stepOrder: [],          // array of step indices to drill through, in order
+  currentIdx: 0,          // pointer into stepOrder
+  results: [],            // {stepIndex, verdict, score, userAnswer}
+  revealed: false,
+  searchQuery: '',
+  walkIdx: 0,             // pointer for step-through recall mode
+  walkRevealed: false
+};
+
+function startDrill(protocolId, opts){
+  opts = opts || {};
+  const proto = findProtocol(protocolId);
+  if(!proto) return;
+  State.activeProtocolId = protocolId;
+  State.practiceOnlyMissed = !!opts.onlyMissed;
+  if(opts.onlyMissed){
+    const prog = getProtocolProgress(protocolId);
+    State.stepOrder = (prog.lastMissedSteps && prog.lastMissedSteps.length) ?
+      prog.lastMissedSteps.slice() : proto.steps.map((_,i)=>i);
+  } else {
+    State.stepOrder = proto.steps.map((_,i)=>i);
+  }
+  State.currentIdx = 0;
+  State.results = [];
+  State.revealed = false;
+  State.view = 'drill';
+  render();
+}
+
+function startWalk(protocolId){
+  const proto = findProtocol(protocolId);
+  if(!proto) return;
+  State.activeProtocolId = protocolId;
+  State.walkIdx = 0;
+  State.walkRevealed = false;
+  State.view = 'walk';
+  render();
+}
+
+function startPharmMode(){
+  State.view = 'pharm';
+  render();
+}
+
+function goHome(){
+  State.view = 'home';
+  State.activeProtocolId = null;
+  render();
+}
+
+
+// ============================================================
+// RENDER HELPERS
+// ============================================================
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function verdictMark(verdict){
+  if(verdict==='correct') return '&#10003;';
+  if(verdict==='partial') return '~';
+  return '&#10005;';
+}
+function verdictLabel(verdict){
+  if(verdict==='correct') return 'Correct';
+  if(verdict==='partial') return 'Partially correct';
+  return 'Incorrect';
+}
+
+function showToast(msg){
+  const existing = document.querySelector('.toast');
+  if(existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{ if(t.parentNode) t.parentNode.removeChild(t); }, 2100);
+}
+
+// Category color assignment — cycles through the accent palette so each
+// tab is visually distinct without introducing new hues per category.
+const CAT_COLORS = [
+  { bg: 'var(--red-tint)', line: 'var(--red-tint-line)', fg: 'var(--red)' },
+  { bg: 'var(--teal-tint)', line: 'var(--teal-tint-line)', fg: 'var(--teal)' },
+  { bg: 'var(--amber-tint)', line: 'var(--amber-tint-line)', fg: 'var(--amber)' },
+  { bg: 'var(--green-tint)', line: 'var(--green-tint-line)', fg: 'var(--green)' },
+];
+function catColor(idx){ return CAT_COLORS[idx % CAT_COLORS.length]; }
+
+// ============================================================
+// VIEW: HOME
+// ============================================================
+function computeHomeStats(){
+  let mastered = 0, attempted = 0;
+  ALL_PROTOCOLS.forEach(p => {
+    const prog = PROGRESS.protocols[p.id];
+    if(prog){
+      if(prog.mastered) mastered++;
+      else if(prog.attempts > 0) attempted++;
+    }
+  });
+  return { mastered, attempted, total: ALL_PROTOCOLS.length, drills: PROGRESS.totalDrills };
+}
+
+function renderHome(){
+  const app = document.getElementById('app');
+  const stats = computeHomeStats();
+  const query = State.searchQuery.toLowerCase().trim();
+
+  let categoriesHtml = '';
+  PROTOCOL_DATA.categories.forEach((cat, catIdx) => {
+    const filtered = cat.protocols.filter(p => !query || p.title.toLowerCase().includes(query));
+    if(filtered.length === 0) return;
+    const color = catColor(catIdx);
+    categoriesHtml += `<div class="cat-block">
+      <div class="cat-tab" style="background:${color.bg}; color:${color.fg}; border:1px solid ${color.line}; border-bottom:none;">
+        ${escapeHtml(cat.name)} <span class="tab-count">${filtered.length}</span>
+      </div>
+      <div class="cat-block-inner">
+        ${filtered.map((p, i) => {
+          const prog = PROGRESS.protocols[p.id];
+          let chip = '<span class="status-chip new">New</span>';
+          if(prog && prog.mastered) chip = '<span class="status-chip mastered">Mastered</span>';
+          else if(prog && prog.attempts > 0) chip = `<span class="status-chip attempted">${prog.bestScore}%</span>`;
+          return `
+          <div class="protocol-row" data-action="open-protocol" data-id="${p.id}">
+            <div class="pr-num">${String(i+1).padStart(2,'0')}</div>
+            <div class="pr-main">
+              <div class="pr-title">${escapeHtml(p.title)}</div>
+              <div class="pr-meta">${p.steps.length} treatment steps</div>
+            </div>
+            <div class="pr-status">${chip}</div>
+            <div class="pr-arrow">&#8250;</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  if(categoriesHtml === ''){
+    categoriesHtml = `<div class="empty-state">No protocols match &ldquo;${escapeHtml(State.searchQuery)}&rdquo;</div>`;
+  }
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-row">
+        <div class="brand"><span class="brand-mark"></span><span class="brand-text">Protocol Drill</span></div>
+        <button class="icon-btn" id="btn-reset-progress" title="Reset progress" aria-label="Reset progress">&#8635;</button>
+      </div>
+    </div>
+    <main>
+      <div class="hero">
+        <h1>BC Paramedic III Trainer</h1>
+        <p>Drill every protocol step-by-step until you can recite it cold.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box accent"><div class="num">${stats.mastered}</div><div class="lbl">Mastered</div></div>
+        <div class="stat-box"><div class="num">${stats.attempted}</div><div class="lbl">In progress</div></div>
+        <div class="stat-box"><div class="num">${stats.drills}</div><div class="lbl">Drills run</div></div>
+      </div>
+
+      <button class="blind-cta" id="btn-pharm-mode" style="background: var(--red);">
+        <span class="bc-icon">&#128138;</span>
+        <span class="bc-text">
+          <span class="bc-title">Pharm Drill</span>
+          <span class="bc-sub">Adult &amp; pediatric drug dose recall</span>
+        </span>
+        <span class="bc-arrow">&#8250;</span>
+      </button>
+
+      <div class="search-row">
+        <span class="search-icon">&#8981;</span>
+        <input type="text" id="search-input" placeholder="Search protocols&hellip;" value="${escapeHtml(State.searchQuery)}" autocomplete="off">
+      </div>
+
+      ${categoriesHtml}
+    </main>
+  `;
+
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    State.searchQuery = e.target.value;
+    renderHome();
+    const inp = document.getElementById('search-input');
+    inp.focus();
+    inp.selectionStart = inp.selectionEnd = inp.value.length;
+  });
+
+  document.getElementById('btn-pharm-mode').addEventListener('click', startPharmMode);
+  document.getElementById('btn-reset-progress').addEventListener('click', () => {
+    if(confirm('Reset all saved progress? This cannot be undone.')){
+      PROGRESS = { protocols: {}, totalDrills: 0 };
+      saveProgress(PROGRESS);
+      renderHome();
+      showToast('Progress reset');
+    }
+  });
+
+  app.querySelectorAll('[data-action="open-protocol"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-id');
+      openProtocolMenu(id);
+    });
+  });
+}
+
+function openProtocolMenu(id){
+  const proto = findProtocol(id);
+  const prog = PROGRESS.protocols[id];
+  const app = document.getElementById('app');
+  const hasMissed = prog && prog.lastMissedSteps && prog.lastMissedSteps.length > 0;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-back"><span>&#8249;</span> All protocols</button>
+      </div>
+    </div>
+    <main>
+      <div class="menu-hero">
+        <div class="menu-cat-label">${escapeHtml(proto.category)}</div>
+        <h1>${escapeHtml(proto.title)}</h1>
+        <div class="menu-meta">${proto.steps.length} treatment steps</div>
+      </div>
+
+      ${prog && prog.attempts > 0 ? `
+        <div class="progress-card">
+          <div class="pc-label">Your progress</div>
+          <div class="progress-stats">
+            <div class="pstat"><span class="v best">${prog.bestScore}%</span><span class="k">Best</span></div>
+            <div class="pstat"><span class="v">${prog.lastScore}%</span><span class="k">Last</span></div>
+            <div class="pstat"><span class="v">${prog.attempts}</span><span class="k">Attempts</span></div>
+          </div>
+        </div>
+      ` : ''}
+
+      <button class="btn btn-primary" id="btn-start-full">Start full drill</button>
+      ${hasMissed ? `<button class="btn btn-secondary" id="btn-start-missed">Practice missed steps only (${prog.lastMissedSteps.length})</button>` : ''}
+      <button class="btn btn-secondary" id="btn-start-walk">Recall & Reveal</button>
+      <button class="btn btn-ghost" id="btn-preview">Preview all steps</button>
+    </main>
+  `;
+
+  document.getElementById('btn-back').addEventListener('click', goHome);
+  document.getElementById('btn-start-full').addEventListener('click', () => startDrill(id, { onlyMissed:false }));
+  if(hasMissed){
+    document.getElementById('btn-start-missed').addEventListener('click', () => startDrill(id, { onlyMissed:true }));
+  }
+  document.getElementById('btn-start-walk').addEventListener('click', () => startWalk(id));
+  document.getElementById('btn-preview').addEventListener('click', () => renderPreview(id));
+}
+
+function renderPreview(id){
+  const proto = findProtocol(id);
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-back"><span>&#8249;</span> ${escapeHtml(proto.title)}</button>
+      </div>
+    </div>
+    <main>
+      <div class="menu-hero" style="padding-bottom:14px;">
+        <div class="menu-cat-label">All steps, in order</div>
+        <h1 style="font-size:20px;">${escapeHtml(proto.title)}</h1>
+      </div>
+      <div class="preview-list">
+        ${proto.steps.map((s,i) => `
+          <div class="preview-item">
+            <div class="pi-num">${String(i+1).padStart(2,'0')}</div>
+            <div class="pi-text">${escapeHtml(s)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-primary" id="btn-start-from-preview" style="margin-top:18px;">Start drill</button>
+      <button class="btn btn-secondary" id="btn-walk-from-preview">Recall & Reveal</button>
+    </main>
+  `;
+  document.getElementById('btn-back').addEventListener('click', () => openProtocolMenu(id));
+  document.getElementById('btn-start-from-preview').addEventListener('click', () => startDrill(id, {onlyMissed:false}));
+  document.getElementById('btn-walk-from-preview').addEventListener('click', () => startWalk(id));
+}
+
+// ============================================================
+// VIEW: STEP THROUGH (self-paced recall — reveal each step)
+// ============================================================
+function renderWalk(){
+  const proto = findProtocol(State.activeProtocolId);
+  const app = document.getElementById('app');
+  const total = proto.steps.length;
+  const idx = State.walkIdx;
+  const stepText = proto.steps[idx];
+  const isLast = idx + 1 >= total;
+  const revealed = State.walkRevealed;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-exit"><span>&#8249;</span> Exit</button>
+      </div>
+    </div>
+    <main>
+      ${renderTabTrack(idx, total, proto.steps.map((_,i) => i < idx))}
+
+      <div class="drill-header">
+        <div class="drill-title">${escapeHtml(proto.title)} <span class="drill-tag">Recall & Reveal</span></div>
+        <div class="step-counter">${idx+1} / ${total}</div>
+      </div>
+
+      <div class="card walk-card">
+        <div class="prompt-label">Step ${idx+1}</div>
+        ${revealed
+          ? `<div class="walk-step-text">${escapeHtml(stepText)}</div>`
+          : `<div class="walk-hidden">Work out this step, then reveal it to check yourself.</div>`
+        }
+      </div>
+
+      <div class="walk-actions">
+        ${idx > 0 ? `<button class="btn btn-ghost" id="btn-walk-back">&#8249; Previous</button>` : ''}
+        ${revealed
+          ? `<button class="btn btn-primary" id="btn-walk-next">${isLast ? 'Finish' : 'Next step &#8250;'}</button>`
+          : `<button class="btn btn-primary" id="btn-walk-reveal">Reveal step</button>`
+        }
+      </div>
+    </main>
+  `;
+
+  document.getElementById('btn-exit').addEventListener('click', () => openProtocolMenu(proto.id));
+  if(idx > 0){
+    document.getElementById('btn-walk-back').addEventListener('click', () => {
+      State.walkIdx -= 1;
+      State.walkRevealed = false;
+      renderWalk();
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  }
+  if(revealed){
+    document.getElementById('btn-walk-next').addEventListener('click', () => {
+      if(isLast){
+        openProtocolMenu(proto.id);
+      } else {
+        State.walkIdx += 1;
+        State.walkRevealed = false;
+        renderWalk();
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+    });
+  } else {
+    document.getElementById('btn-walk-reveal').addEventListener('click', () => {
+      State.walkRevealed = true;
+      renderWalk();
+    });
+  }
+}
+
+// ============================================================
+// VIEW: DRILL
+// ============================================================
+function renderTabTrack(currentIdx, total, results){
+  let html = '<div class="tab-track">';
+  for(let i=0;i<total;i++){
+    let cls = 'tick';
+    if(i < results.length && results[i]) cls += ' done';
+    else if(i === currentIdx) cls += ' current';
+    html += `<div class="${cls}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderDrill(){
+  const proto = findProtocol(State.activeProtocolId);
+  const app = document.getElementById('app');
+  const stepIdx = State.stepOrder[State.currentIdx];
+  const stepText = proto.steps[stepIdx];
+  const total = State.stepOrder.length;
+  const onResult = State.results[State.currentIdx];
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-exit"><span>&#8249;</span> Exit drill</button>
+      </div>
+    </div>
+    <main>
+      ${renderTabTrack(State.currentIdx, total, State.results)}
+
+      <div class="drill-header">
+        <div class="drill-title">${escapeHtml(proto.title)}${State.practiceOnlyMissed ? ' <span class="drill-tag">Missed steps</span>' : ''}</div>
+        <div class="step-counter">${State.currentIdx+1} / ${total}</div>
+      </div>
+
+      <div class="card">
+        <div class="prompt-label">What is the next step?</div>
+        <textarea class="answer-box" id="answer-input" placeholder="Type the next step in your own words&hellip;" ${onResult ? 'disabled' : ''}>${onResult ? escapeHtml(onResult.userAnswer) : ''}</textarea>
+        ${!onResult ? `
+          <div class="answer-actions">
+            <button class="btn btn-ghost btn-skip" id="btn-skip">Skip</button>
+            <button class="btn btn-primary btn-submit" id="btn-submit">Check answer</button>
+          </div>
+        ` : ''}
+      </div>
+
+      <div id="feedback-zone"></div>
+
+      ${onResult ? `
+        <button class="btn btn-primary" id="btn-next">
+          ${State.currentIdx + 1 < total ? 'Next step &#8250;' : 'Finish drill'}
+        </button>
+      ` : ''}
+    </main>
+  `;
+
+  document.getElementById('btn-exit').addEventListener('click', () => {
+    if(confirm('Exit this drill? Progress on this attempt will be lost.')){
+      openProtocolMenu(State.activeProtocolId);
+    }
+  });
+
+  if(onResult){
+    renderFeedback(onResult, stepText);
+    document.getElementById('btn-next').addEventListener('click', advanceDrill);
+  } else {
+    const textarea = document.getElementById('answer-input');
+    textarea.focus();
+    document.getElementById('btn-submit').addEventListener('click', () => submitAnswer(stepText));
+    document.getElementById('btn-skip').addEventListener('click', () => submitAnswer(stepText, true));
+    textarea.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)){
+        submitAnswer(stepText);
+      }
+    });
+  }
+}
+
+function submitAnswer(correctStep, skipped){
+  const textarea = document.getElementById('answer-input');
+  const userAnswer = skipped ? '' : textarea.value;
+  const evalResult = skipped ?
+    { verdict:'incorrect', score:0, whyText:"Step skipped — here's the correct step." } :
+    evaluateAnswer(userAnswer, correctStep);
+
+  State.results[State.currentIdx] = {
+    stepIndex: State.stepOrder[State.currentIdx],
+    userAnswer: userAnswer,
+    verdict: evalResult.verdict,
+    score: evalResult.score,
+    whyText: evalResult.whyText
+  };
+  renderDrill();
+}
+
+function renderFeedback(result, correctStep){
+  const zone = document.getElementById('feedback-zone');
+  zone.innerHTML = `
+    <div class="feedback ${result.verdict}">
+      <div class="feedback-verdict"><span class="verdict-mark">${verdictMark(result.verdict)}</span> ${verdictLabel(result.verdict)}</div>
+      <div class="feedback-why">${escapeHtml(result.whyText)}</div>
+      <div class="feedback-correct-step">
+        <span class="fc-label">Correct step</span>
+        ${escapeHtml(correctStep)}
+      </div>
+      ${result.verdict !== 'correct' ? `
+        <button class="btn btn-ghost btn-override" id="btn-mark-correct">Actually, I got this right &mdash; mark correct</button>
+      ` : ''}
+    </div>
+  `;
+  if(result.verdict !== 'correct'){
+    document.getElementById('btn-mark-correct').addEventListener('click', markCurrentStepCorrect);
+  }
+}
+
+function markCurrentStepCorrect(){
+  const result = State.results[State.currentIdx];
+  if(!result) return;
+  result.verdict = 'correct';
+  result.score = 1;
+  result.whyText = 'Marked correct by you.';
+  result.overridden = true;
+  renderDrill();
+}
+
+function advanceDrill(){
+  if(State.currentIdx + 1 < State.stepOrder.length){
+    State.currentIdx += 1;
+    renderDrill();
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    finishDrill();
+  }
+}
+
+function finishDrill(){
+  const proto = findProtocol(State.activeProtocolId);
+  const total = State.results.length;
+  const correctCount = State.results.filter(r=>r.verdict==='correct').length;
+  const partialCount = State.results.filter(r=>r.verdict==='partial').length;
+  const incorrectCount = State.results.filter(r=>r.verdict==='incorrect').length;
+
+  const rawScore = State.results.reduce((sum,r) => sum + (r.verdict==='correct' ? 1 : r.verdict==='partial' ? 0.5 : 0), 0);
+  const pct = total > 0 ? Math.round((rawScore/total)*100) : 0;
+
+  const missedStepIndices = State.results
+    .filter(r => r.verdict !== 'correct')
+    .map(r => r.stepIndex);
+
+  recordAttempt(proto.id, pct, missedStepIndices);
+
+  State.view = 'summary';
+  State.lastSummary = { pct, correctCount, partialCount, incorrectCount, total, missedStepIndices };
+  render();
+}
+
+// ============================================================
+// VIEW: SUMMARY
+// ============================================================
+function renderSummary(){
+  const proto = findProtocol(State.activeProtocolId);
+  const app = document.getElementById('app');
+  const s = State.lastSummary;
+
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference * (1 - s.pct/100);
+  const ringColor = s.pct >= 90 ? 'var(--green)' : s.pct >= 60 ? 'var(--amber)' : 'var(--red)';
+
+  const missedReview = State.results
+    .map((r, posIdx) => ({ r, posIdx }))
+    .filter(x => x.r.verdict !== 'correct')
+    .map(x => {
+      const stepText = proto.steps[x.r.stepIndex];
+      return `
+        <div class="review-item ${x.r.verdict === 'partial' ? 'partial' : 'miss'}">
+          <div class="ri-head">${verdictLabel(x.r.verdict)} &mdash; Step ${x.r.stepIndex+1}</div>
+          <div class="ri-step"><strong>Correct</strong>${escapeHtml(stepText)}</div>
+          ${x.r.userAnswer ? `<div class="ri-step"><strong>You wrote</strong>${escapeHtml(x.r.userAnswer)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-home"><span>&#8249;</span> Home</button>
+      </div>
+    </div>
+    <main>
+      <div class="summary-hero">
+        <div class="sh-label">Drill complete</div>
+        <h1>${escapeHtml(proto.title)}</h1>
+      </div>
+
+      <div class="ring-wrap">
+        <svg viewBox="0 0 128 128">
+          <circle class="ring-bg" cx="64" cy="64" r="54"></circle>
+          <circle class="ring-fg" cx="64" cy="64" r="54" stroke="${ringColor}"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+          <text x="64" y="71" text-anchor="middle" class="ring-text" fill="${ringColor}" style="font-size:28px;">${s.pct}%</text>
+        </svg>
+      </div>
+
+      <div class="summary-breakdown">
+        <div class="sb-item ok"><div class="v">${s.correctCount}</div><div class="k">Correct</div></div>
+        <div class="sb-item partial"><div class="v">${s.partialCount}</div><div class="k">Partial</div></div>
+        <div class="sb-item miss"><div class="v">${s.incorrectCount}</div><div class="k">Missed</div></div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-retry-full">Restart full protocol</button>
+      ${s.missedStepIndices.length > 0 ? `<button class="btn btn-secondary" id="btn-retry-missed">Practice only missed steps (${s.missedStepIndices.length})</button>` : ''}
+      <button class="btn btn-ghost" id="btn-back-menu">Back to protocol menu</button>
+
+      ${missedReview ? `
+        <div class="section-divider"><span class="sd-label">Steps to review</span><span class="sd-line"></span></div>
+        <div class="review-list">${missedReview}</div>
+      ` : `
+        <div class="section-divider"><span class="sd-label">Perfect run</span><span class="sd-line"></span></div>
+        <div class="empty-state">Every step nailed. Try another protocol, or come back later to keep this one sharp.</div>
+      `}
+    </main>
+  `;
+
+  document.getElementById('btn-home').addEventListener('click', goHome);
+  document.getElementById('btn-back-menu').addEventListener('click', () => openProtocolMenu(proto.id));
+  document.getElementById('btn-retry-full').addEventListener('click', () => startDrill(proto.id, {onlyMissed:false}));
+  if(s.missedStepIndices.length > 0){
+    document.getElementById('btn-retry-missed').addEventListener('click', () => {
+      const prog = getProtocolProgress(proto.id);
+      prog.lastMissedSteps = s.missedStepIndices;
+      saveProgress(PROGRESS);
+      startDrill(proto.id, {onlyMissed:true});
+    });
+  }
+}
+
+// ============================================================
+// VIEW: PHARM DRILL
+// ============================================================
+const PHARM_MEDS = [
+  { name:"Adenosine",                         adult:"12mg",                                  peds:"0.1mg/kg (1st), 0.2mg/kg (2nd)",         pkg:"6mg / 2ml" },
+  { name:"Albuterol",                         adult:"2.5mg",                                 peds:"2.5mg (≥1 y/o), 1.25mg (<1 y/o)",        pkg:"2.5mg / 3ml" },
+  { name:"Amiodarone",                        adult:"300mg (1st), 150mg (2nd)",              peds:"5mg/kg",                                  pkg:"150mg / 3ml" },
+  { name:"Atropine",                          adult:"1mg",                                   peds:"0.02mg/kg",                               pkg:"1mg / 10ml" },
+  { name:"Atrovent",                          adult:"0.5mg",                                 peds:"0.5mg (≥8 y/o), 0.25mg (<8 y/o)",        pkg:"0.5mg / 2.5ml" },
+  { name:"Benadryl",                          adult:"50mg",                                  peds:"1mg/kg",                                  pkg:"50mg / 1ml" },
+  { name:"Calcium Chloride",                  adult:"1 gram",                                peds:"20mg/kg",                                 pkg:"1G / 10ml" },
+  { name:"Dextrose 50%",                      adult:"25 grams",                              peds:"N/A (adults only)",                       pkg:"25G / 50ml" },
+  { name:"Dextrose 25%",                      adult:"N/A (peds only)",                       peds:"2ml/kg (8 y/o to 1 y/o)",                 pkg:"25G/50ml — waste 25ml, reconstitute w/ 25ml NS" },
+  { name:"Dextrose 10%",                      adult:"N/A (peds only)",                       peds:"For PT <1 y/o",                           pkg:"25G/50ml — waste 40ml, reconstitute w/ 40ml NS" },
+  { name:"Epinephrine 1:1,000",               adult:"0.3mg",                                 peds:"0.01mg/kg",                               pkg:"1mg / 1ml" },
+  { name:"Epinephrine 1:10,000",              adult:"1mg",                                   peds:"0.01mg/kg",                               pkg:"1mg / 10ml" },
+  { name:"Epinephrine 1:100,000 (Push Pressor)", adult:"0.1mg max, 1ml/min",               peds:"0.1mg max, 1ml/min",                      pkg:"Waste 9ml, reconstitute w/ 9ml NS" },
+  { name:"Etomidate",                         adult:"0.3mg/kg (max 30mg)",                   peds:"0.3mg/kg (max 30mg)",                     pkg:"20mg / 10ml" },
+  { name:"Fentanyl",                          adult:"100mcg",                                peds:"0.5mcg/kg IV/IO over 2 min; 1.5mcg/kg IN/IM", pkg:"100mcg / 2ml" },
+  { name:"Glucagon",                          adult:"1mg/min IV/IO (max 10mg)",              peds:"1mg/min IV/IO (max 5mg); 0.5mg/min if <20kg", pkg:"1mg / unit" },
+  { name:"Ketamine",                          adult:"2mg/kg",                                peds:"1mg/kg",                                  pkg:"500mg / 5ml" },
+  { name:"Lasix",                             adult:"40mg (80mg if previously prescribed)",  peds:"N/A",                                     pkg:"40mg / 4ml" },
+  { name:"Magnesium Sulfate",                 adult:"2G (4G for eclampsia)",                 peds:"50mg/kg",                                 pkg:"1G / 2ml" },
+  { name:"Narcan",                            adult:"2.0mg",                                 peds:"0.1mg/kg",                                pkg:"2mg / 2ml" },
+  { name:"Rocuronium",                        adult:"1mg/kg",                                peds:"1mg/kg",                                  pkg:"100mg / 10ml" },
+  { name:"Sodium Bicarbonate",                adult:"50meq of 8.4%",                         peds:"1meq/kg of 4.2%",                         pkg:"50meq/50ml — waste 25ml, reconstitute w/ 25ml NS" },
+  { name:"Solumedrol",                        adult:"125mg",                                 peds:"2mg/kg",                                  pkg:"125mg / 2ml" },
+  { name:"TXA",                               adult:"2 grams",                               peds:"15mg/kg",                                 pkg:"1G / 10ml" },
+  { name:"Versed",                            adult:"5mg",                                   peds:"0.1mg/kg",                                pkg:"10mg / 2ml" },
+];
+
+const PharmState = {
+  mode: 'adult',
+  queue: [],
+  cur: null,
+  answered: false,
+  correct: 0, wrong: 0, streak: 0, total: 0,
+  refOpen: false,
+  initialized: false
+};
+
+function pharmShuffle(a){
+  for(let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function pharmResetSession(){
+  PharmState.correct = PharmState.wrong = PharmState.streak = PharmState.total = 0;
+  PharmState.queue = pharmShuffle([...PHARM_MEDS]);
+  PharmState.answered = false;
+  pharmLoadCard();
+}
+
+function pharmLoadCard(){
+  if(!PharmState.queue.length) PharmState.queue = pharmShuffle([...PHARM_MEDS]);
+  const cm = PharmState.mode === 'both' ? (Math.random() < 0.5 ? 'adult' : 'peds') : PharmState.mode;
+  PharmState.cur = { med: PharmState.queue.pop(), cm };
+  PharmState.answered = false;
+}
+
+function pharmGetAnswer(){
+  return PharmState.cur.cm === 'adult' ? PharmState.cur.med.adult : PharmState.cur.med.peds;
+}
+
+function pharmFuzzy(user, correct){
+  const n = s => s.toLowerCase().replace(/\s+/g,' ').trim();
+  const u = n(user), c = n(correct);
+  if(u === c || c.includes(u)) return true;
+  const nums = s => s.match(/[\d.]+\s*(?:mg|mcg|g|gram|ml|meq|unit|kg|%)?(?:\/kg)?/g) || [];
+  const ut = nums(u), ct = nums(c);
+  if(ut.length && ct.length){
+    const norm = t => t.replace(/\s/g,'');
+    const cs = ct.map(norm);
+    return ut.every(t => cs.some(cx => cx.includes(norm(t)) || norm(t).includes(cx)));
+  }
+  return false;
+}
+
+function pharmReveal(){
+  if(PharmState.answered){ pharmNext(); return; }
+  PharmState.answered = true; PharmState.total++; PharmState.wrong++; PharmState.streak = 0;
+  PharmState._revealed = true;
+  renderPharm();
+}
+
+function pharmSkip(){
+  PharmState.queue.unshift(PharmState.cur.med);
+  pharmLoadCard();
+  renderPharm();
+}
+
+function pharmNext(){
+  PharmState._revealed = false;
+  pharmLoadCard();
+  renderPharm();
+}
+
+function pharmSetMode(m){
+  PharmState.mode = m;
+  pharmResetSession();
+  renderPharm();
+}
+
+function pharmBuildRefRows(){
+  return PHARM_MEDS.map(m => `
+    <tr>
+      <td>${escapeHtml(m.name)}</td>
+      <td>${escapeHtml(m.adult)}</td>
+      <td>${escapeHtml(m.peds)}</td>
+      <td>${escapeHtml(m.pkg)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderPharm(){
+  if(!PharmState.initialized){
+    PharmState.initialized = true;
+    pharmResetSession();
+  }
+  const app = document.getElementById('app');
+  const cur = PharmState.cur;
+  const cm = cur.cm;
+  const ans = pharmGetAnswer();
+  const answered = PharmState.answered;
+  const revealed = !!PharmState._revealed;
+
+  const pct = PharmState.total ? Math.round((PharmState.total / (PharmState.total + PharmState.queue.length + 1)) * 100) : 0;
+
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="back-row">
+        <button class="back-btn" id="btn-pharm-exit"><span>&#8249;</span> Home</button>
+      </div>
+    </div>
+    <main>
+      <div class="pharm-view pharm-root">
+        <header>
+          <div class="logo">Pharm Drill<span>EMS Pharmacology Practice</span></div>
+          <div class="score-pill" id="pharm-score-pill"><strong>${PharmState.correct}</strong> / ${PharmState.total} correct</div>
+        </header>
+
+        <div class="tabs">
+          <button class="tab ${PharmState.mode==='adult'?'active':''}" data-mode="adult" id="pharm-tab-adult">Adult Doses</button>
+          <button class="tab ${PharmState.mode==='peds'?'active':''}" data-mode="peds" id="pharm-tab-peds">Peds Doses</button>
+          <button class="tab ${PharmState.mode==='both'?'active':''}" data-mode="both" id="pharm-tab-both">Mixed</button>
+        </div>
+
+        <div class="progress-track"><div class="progress-fill ${PharmState.mode==='both'?'both':PharmState.mode}" style="width:${pct}%;"></div></div>
+
+        <div class="stats">
+          <div class="stat"><span class="val">${PharmState.correct}</span><span class="lbl">Correct</span></div>
+          <div class="stat"><span class="val">${PharmState.wrong}</span><span class="lbl">Missed</span></div>
+          <div class="stat"><span class="val">${PharmState.streak}</span><span class="lbl">Streak</span></div>
+        </div>
+
+        <div class="card ${cm}-mode" id="pharm-card">
+          <div class="dose-label ${PharmState.mode==='both'?'both':cm}"><span class="dot"></span><span>${cm==='adult'?'Adult Dose':'Pediatric Dose'}</span></div>
+          <div class="drug-name">${escapeHtml(cur.med.name)}</div>
+          <div class="drug-pkg">&#128230; ${escapeHtml(cur.med.pkg)}</div>
+          <div class="question">${cm==='adult' ? 'What is the adult dose?' : 'What is the pediatric dose?'}</div>
+        </div>
+
+        <div class="answer-row">
+          <input class="${answered ? (revealed ? 'ans-input err' : (PharmState._lastOk ? 'ans-input ok' : 'ans-input err')) : 'ans-input'}" id="pharm-ans" type="text" placeholder="Enter dose&hellip;" autocomplete="off" ${answered ? 'disabled' : ''} value="">
+          <button class="check-btn" id="pharm-check-btn">Check</button>
+        </div>
+
+        <div class="${answered ? (revealed ? 'feedback err' : (PharmState._lastOk ? 'feedback ok' : 'feedback err')) : 'feedback'}" id="pharm-fb">
+          ${answered ? (
+            revealed
+              ? `<span class="fb-icon">&#128065;</span><span>Answer: <span class="ans-text">${escapeHtml(ans)}</span></span>`
+              : (PharmState._lastOk
+                  ? `<span class="fb-icon">&#10003;</span><span>Correct &mdash; <span class="ans-text">${escapeHtml(ans)}</span></span>`
+                  : `<span class="fb-icon">&#10005;</span><span>Incorrect. Answer: <span class="ans-text">${escapeHtml(ans)}</span></span>`)
+          ) : `<span class="fb-icon">&#128138;</span><span>Type the dose above and press Check &mdash; or hit Enter.</span>`}
+        </div>
+
+        <div class="controls">
+          <button class="ctrl" id="pharm-reveal-btn">Reveal</button>
+          <button class="ctrl" id="pharm-skip-btn">Skip</button>
+          <button class="ctrl next" id="pharm-next-btn" ${answered ? '' : 'disabled'}>Next &rarr;</button>
+        </div>
+
+        <div class="ref-section">
+          <button class="ref-toggle-btn" id="pharm-ref-toggle">
+            <i class="chevron ${PharmState.refOpen ? 'open' : ''}">&#9658;</i> Reference table
+          </button>
+          <div class="ref-wrap ${PharmState.refOpen ? 'open' : ''}">
+            <table>
+              <thead><tr><th>Medication</th><th>Adult</th><th>Pediatric</th><th>Packaging</th></tr></thead>
+              <tbody>${pharmBuildRefRows()}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  `;
+
+  document.getElementById('btn-pharm-exit').addEventListener('click', goHome);
+  document.getElementById('pharm-tab-adult').addEventListener('click', () => pharmSetMode('adult'));
+  document.getElementById('pharm-tab-peds').addEventListener('click', () => pharmSetMode('peds'));
+  document.getElementById('pharm-tab-both').addEventListener('click', () => pharmSetMode('both'));
+  document.getElementById('pharm-check-btn').addEventListener('click', pharmCheckWrapper);
+  document.getElementById('pharm-reveal-btn').addEventListener('click', pharmReveal);
+  document.getElementById('pharm-skip-btn').addEventListener('click', pharmSkip);
+  document.getElementById('pharm-next-btn').addEventListener('click', pharmNext);
+  document.getElementById('pharm-ref-toggle').addEventListener('click', () => {
+    PharmState.refOpen = !PharmState.refOpen;
+    renderPharm();
+  });
+
+  const ansInput = document.getElementById('pharm-ans');
+  if(!answered){
+    ansInput.focus();
+    ansInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') pharmCheckWrapper(); });
+  }
+}
+
+function pharmCheckWrapper(){
+  if(PharmState.answered){ pharmNext(); return; }
+  const inp = document.getElementById('pharm-ans');
+  if(!inp) return;
+  const val = inp.value.trim();
+  if(!val) return;
+  const ans = pharmGetAnswer();
+  const ok = pharmFuzzy(val, ans);
+  PharmState.answered = true; PharmState.total++;
+  PharmState._lastOk = ok;
+  PharmState._revealed = false;
+  if(ok){ PharmState.correct++; PharmState.streak++; }
+  else{ PharmState.wrong++; PharmState.streak = 0; }
+  renderPharm();
+}
+
+// ============================================================
+// MAIN RENDER DISPATCHER
+// ============================================================
+function render(){
+  if(State.view === 'home') renderHome();
+  else if(State.view === 'drill') renderDrill();
+  else if(State.view === 'summary') renderSummary();
+  else if(State.view === 'walk') renderWalk();
+  else if(State.view === 'pharm') renderPharm();
+  else renderHome();
+}
+
+render();
+</script>
+</body>
+</html>
